@@ -22,6 +22,19 @@
   </head>
   <body>
     <div id="root"></div>
+    <script src="/runtime-api.js"></script>
+    <script>
+      (function () {
+        var raw = String(window.__INTERVIEWIQ_RUNTIME_API_URL__ || '').replace(/\/+$/, '');
+        var resolved = !raw ? '' : /\/api$/.test(raw) ? raw : raw + '/api';
+        window.__INTERVIEWIQ_API__ = window.__INTERVIEWIQ_API__ || {
+          resolved: resolved,
+          source: 'html-boot',
+          pageHost: location.hostname
+        };
+        console.info('[InterviewIQ] API boot', window.__INTERVIEWIQ_API__.resolved, window.__INTERVIEWIQ_API__);
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
