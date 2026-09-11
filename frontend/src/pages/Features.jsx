@@ -141,7 +141,7 @@ const STEPS = [
 const Features = () => {
   return (
     <div className="bg-slate-50 py-8 dark:bg-[#070b16]">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl px-3 sm:px-6 lg:px-8">
         <BackButton />
         <HeroRobotBanner
           badge="Powerful Features"
@@ -167,7 +167,7 @@ const Features = () => {
           <div className="grid items-center gap-8 lg:grid-cols-2">
             <div>
               <p className="text-sm font-semibold text-indigo-100">Go further</p>
-              <h2 className="mt-2 text-3xl font-bold">Advanced Tools for Better Preparation</h2>
+              <h2 className="mt-2 text-[clamp(1.25rem,5vw,1.875rem)] font-bold">Advanced Tools for Better Preparation</h2>
               <p className="mt-3 max-w-xl text-sm text-indigo-100">
                 Combine mock interviews, live feedback, and progress tracking in one place.
               </p>
@@ -190,7 +190,7 @@ const Features = () => {
 
         <section className="mb-14">
           <div className="mb-8 text-center">
-            <h2 className="text-3xl font-bold text-slate-900 dark:text-white">How It Works</h2>
+            <h2 className="text-[clamp(1.35rem,5vw,1.875rem)] font-bold text-slate-900 dark:text-white">How It Works</h2>
             <p className="mt-2 text-sm text-slate-500">Simple steps to success</p>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">

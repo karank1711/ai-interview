@@ -107,14 +107,14 @@ function AppPopup({ popup, onClose, onConfirm }) {
             aria-modal="true"
             aria-labelledby="app-popup-title"
             style={{ perspective: 1200 }}
-            className="relative w-full max-w-md"
+            className="relative w-full max-w-[min(24rem,calc(100vw-1.5rem))]"
             initial={{ opacity: 0, y: 40, rotateX: 28, scale: 0.86 }}
             animate={{ opacity: 1, y: 0, rotateX: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, rotateX: -16, scale: 0.92 }}
             transition={{ type: 'spring', stiffness: 280, damping: 22 }}
           >
             <div
-              className={`relative overflow-hidden rounded-3xl border p-6 shadow-[0_24px_60px_rgba(15,23,42,0.35)] ${
+              className={`relative overflow-hidden rounded-3xl border p-4 shadow-[0_24px_60px_rgba(15,23,42,0.35)] sm:p-6 ${
                 isError
                   ? 'border-red-200 bg-gradient-to-br from-white via-red-50 to-orange-50 dark:border-red-800 dark:from-gray-900 dark:via-red-950 dark:to-gray-900'
                   : 'border-blue-200 bg-gradient-to-br from-white via-blue-50 to-purple-50 dark:border-blue-800 dark:from-gray-900 dark:via-indigo-950 dark:to-gray-900'

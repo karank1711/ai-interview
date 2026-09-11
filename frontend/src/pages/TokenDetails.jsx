@@ -101,12 +101,12 @@ export default function TokenDetails() {
 
   return (
     <div className="min-h-screen bg-slate-50 py-8 dark:bg-[#070b16]">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl px-3 sm:px-6 lg:px-8">
         <BackButton fallback="/dashboard" />
 
         <div className="mb-8 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{model.title}</h1>
+            <h1 className="text-[clamp(1.35rem,5vw,1.875rem)] font-bold text-slate-900 dark:text-white">{model.title}</h1>
             <p className="mt-2 max-w-2xl text-slate-500 dark:text-slate-400">{model.description}</p>
           </div>
           <TokenHeroArt token={model.key} className="h-24 w-24 shrink-0 sm:h-28 sm:w-28" />
@@ -118,7 +118,7 @@ export default function TokenDetails() {
               <HeroIcon className="h-7 w-7" />
             </div>
             <div>
-              <p className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-5xl">
+              <p className="text-[clamp(1.75rem,8vw,3rem)] font-bold tracking-tight text-slate-900 dark:text-white">
                 <AnimatedCounter value={model.mainValue} />
               </p>
               <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">{model.mainLabel}</p>

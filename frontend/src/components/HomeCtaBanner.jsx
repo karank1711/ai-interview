@@ -73,8 +73,8 @@ function TargetAnalyticsArt({ className = '' }) {
 
 export default function HomeCtaBanner() {
   return (
-    <section className="px-4 pb-12 sm:px-6 lg:px-8">
-      <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[1.75rem] bg-[#070b1c] px-5 py-10 shadow-[0_20px_60px_rgba(15,23,42,0.35)] sm:px-8 sm:py-12 lg:px-10">
+    <section className="px-3 pb-10 sm:px-6 sm:pb-12 lg:px-8">
+      <div className="relative mx-auto max-w-7xl overflow-hidden rounded-[1.75rem] bg-[#070b1c] px-4 py-8 shadow-[0_20px_60px_rgba(15,23,42,0.35)] sm:px-8 sm:py-12 lg:px-10">
         <div className="pointer-events-none absolute -left-24 top-0 h-64 w-64 rounded-full bg-sky-500/20 blur-3xl" />
         <div className="pointer-events-none absolute -right-16 bottom-0 h-72 w-72 rounded-full bg-violet-600/25 blur-3xl" />
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(56,189,248,0.12),transparent_36%),radial-gradient(circle_at_80%_80%,rgba(139,92,246,0.16),transparent_40%)]" />
@@ -85,12 +85,12 @@ export default function HomeCtaBanner() {
           <path d="M220 40 C120 80, 180 160, 80 190 S40 320, 210 370" stroke="currentColor" strokeWidth="2" />
         </svg>
 
-        <div className="relative grid grid-cols-2 items-center gap-6 sm:gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.3fr)_minmax(0,0.9fr)]">
+        <div className="relative grid grid-cols-1 items-center gap-6 sm:grid-cols-2 sm:gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.3fr)_minmax(0,0.9fr)]">
           <motion.div
             initial={{ opacity: 0, x: -16 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="order-2 col-span-1 mx-auto w-full max-w-[280px] lg:order-1 lg:max-w-none"
+            className="order-2 col-span-1 mx-auto hidden w-full max-w-[280px] sm:block lg:order-1 lg:max-w-none"
           >
             <LaptopInterviewArt className="h-auto w-full" />
           </motion.div>
@@ -99,13 +99,13 @@ export default function HomeCtaBanner() {
             initial={{ opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="order-1 col-span-2 px-1 text-center lg:order-2 lg:col-span-1"
+            className="order-1 col-span-1 px-1 text-center sm:col-span-2 lg:order-2 lg:col-span-1"
           >
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-violet-600/80 px-3 py-1 text-[11px] font-semibold tracking-[0.18em] text-white shadow-[0_0_20px_rgba(139,92,246,0.45)]">
+            <div className="mb-5 inline-flex max-w-full items-center gap-2 rounded-full bg-violet-600/80 px-3 py-1 text-[11px] font-semibold tracking-widest text-white shadow-[0_0_20px_rgba(139,92,246,0.45)] sm:tracking-[0.18em]">
               <AnimatedBrain className="h-4 w-4" particleCount={4} glowIntensity={0.4} />
               INTERVIEWIQ
             </div>
-            <h2 className="text-3xl font-bold leading-tight text-white sm:text-4xl md:text-[2.5rem]">
+            <h2 className="text-[clamp(1.35rem,5vw,2.5rem)] font-bold leading-tight text-white sm:text-4xl md:text-[2.5rem]">
               Ready to{' '}
               <span className="bg-[linear-gradient(90deg,#FFFFFF_0%,#C4B5FD_42%,#38BDF8_100%)] bg-clip-text text-transparent">
                 Ace Your Interview?
@@ -126,7 +126,7 @@ export default function HomeCtaBanner() {
             </div>
             <Link
               to="/dashboard"
-              className="mt-7 inline-flex items-center rounded-full bg-gradient-to-r from-blue-500 to-fuchsia-500 px-7 py-3 text-sm font-semibold text-white shadow-[0_8px_30px_rgba(99,102,241,0.55)] transition hover:from-blue-400 hover:to-fuchsia-400"
+              className="mt-7 inline-flex min-h-11 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-fuchsia-500 px-7 py-3 text-sm font-semibold text-white shadow-[0_8px_30px_rgba(99,102,241,0.55)] transition hover:from-blue-400 hover:to-fuchsia-400"
             >
               Go to Dashboard
               <ArrowRightIcon className="ml-2 h-4 w-4" />
@@ -137,7 +137,7 @@ export default function HomeCtaBanner() {
             initial={{ opacity: 0, x: 16 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="order-3 col-span-1 mx-auto w-full max-w-[240px] lg:max-w-none"
+            className="order-3 col-span-1 mx-auto hidden w-full max-w-[240px] sm:block lg:max-w-none"
           >
             <TargetAnalyticsArt className="h-auto w-full" />
           </motion.div>

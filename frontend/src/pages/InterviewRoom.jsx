@@ -1311,13 +1311,13 @@ const InterviewRoom = ({ user }) => {
   if (isSessionRoute) {
     return (
       <div className="h-[calc(100dvh-4rem)] bg-slate-950 text-white overflow-hidden">
-        <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col min-h-0">
-          <div className="flex items-center justify-between mb-3 shrink-0">
-            <div className="flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse" />
-              <h1 className="text-lg font-semibold">AI Interview Session</h1>
+        <div className="h-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 flex flex-col min-h-0 min-w-0">
+          <div className="flex items-center justify-between gap-3 mb-3 shrink-0 min-w-0">
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-red-500 animate-pulse" />
+              <h1 className="truncate text-[clamp(0.95rem,3.8vw,1.125rem)] font-semibold">AI Interview Session</h1>
             </div>
-            <p className="text-sm text-slate-300">
+            <p className="shrink-0 text-xs text-slate-300 sm:text-sm">
               Question {currentQuestionIndex + 1}/{plannedQuestionCount || questions.length || 0}
             </p>
           </div>
@@ -1431,7 +1431,7 @@ const InterviewRoom = ({ user }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

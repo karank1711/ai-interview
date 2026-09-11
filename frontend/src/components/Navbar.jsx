@@ -38,24 +38,33 @@ const Navbar = ({ user, logout, showSidebarToggle = false }) => {
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white/95 backdrop-blur-md shadow-sm dark:border-white/10 dark:bg-[#0b1224]/95">
       <div className="grid h-16 w-full grid-cols-[auto_1fr_auto] items-center gap-2 px-3 sm:gap-3 sm:px-4 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:px-6">
-        <div className="flex items-center gap-2 justify-self-start">
+        <div className="flex min-w-0 items-center gap-2 justify-self-start">
           {showSidebarToggle ? (
             <button
               type="button"
               aria-label={sidebar.open ? 'Close sidebar' : 'Open sidebar'}
               onClick={handleLeftToggle}
-              className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700"
+              className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700 sm:h-10 sm:w-10"
             >
               {sidebar.open ? <XMarkIcon className="h-6 w-6" /> : <Bars3Icon className="h-6 w-6" />}
             </button>
-          ) : null}
+          ) : (
+            <button
+              type="button"
+              aria-label={isOpen ? 'Close menu' : 'Open menu'}
+              onClick={handleLeftToggle}
+              className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700 md:hidden"
+            >
+              {isOpen ? <XMarkIcon className="h-6 w-6" /> : <Bars3Icon className="h-6 w-6" />}
+            </button>
+          )}
           <Link
             to="/"
-            className="flex cursor-pointer items-center gap-2"
+            className="flex min-w-0 cursor-pointer items-center gap-2"
             onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' })}
           >
-            <AnimatedBrain className="h-10 w-10 shrink-0" />
-            <span className="text-lg font-bold leading-none gradient-text sm:text-xl">InterviewIQ</span>
+            <AnimatedBrain className="h-8 w-8 shrink-0 sm:h-10 sm:w-10" />
+            <span className="truncate text-[clamp(0.95rem,3.8vw,1.25rem)] font-bold leading-none gradient-text">InterviewIQ</span>
           </Link>
         </div>
 
@@ -87,7 +96,7 @@ const Navbar = ({ user, logout, showSidebarToggle = false }) => {
               <button
                 type="button"
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="flex cursor-pointer items-center gap-2 rounded-full py-1 pl-1 pr-2 text-gray-700 transition-colors hover:bg-gray-50 hover:text-blue-600 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-blue-400"
+                className="flex min-h-11 cursor-pointer items-center gap-2 rounded-full py-1 pl-1 pr-2 text-gray-700 transition-colors hover:bg-gray-50 hover:text-blue-600 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-blue-400 sm:min-h-0"
               >
                 <UserAvatar user={user} className="h-8 w-8" />
                 <span className="hidden max-w-[10rem] truncate font-medium leading-none sm:inline">{user.name || user.email}</span>
@@ -100,40 +109,18 @@ const Navbar = ({ user, logout, showSidebarToggle = false }) => {
                       initial={{ opacity: 0, scale: 0.96, y: -8 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.96, y: -8 }}
-                      className="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-xl border border-gray-200 bg-white py-2 shadow-xl dark:border-white/10 dark:bg-[#121a2e]"
+                      className="absolute right-0 z-50 mt-2 w-[min(14rem,calc(100vw-1.5rem))] overflow-hidden rounded-xl border border-gray-200 bg-white py-2 shadow-xl dark:border-white/10 dark:bg-[#121a2e]"
                     >
                       <div className="border-b border-gray-100 px-4 py-2 dark:border-gray-700">
                         <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">{user.name || 'Account'}</p>
                         <p className="truncate text-xs text-gray-500">{user.email}</p>
                       </div>
-                      <Link
-                        to="/dashboard"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-violet-50 dark:text-gray-300 dark:hover:bg-gray-700"
-                        onClick={() => setShowProfileMenu(false)}
-                      >
-                        Dashboard
-                      </Link>
-                      <Link
-                        to="/profile"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-violet-50 dark:text-gray-300 dark:hover:bg-gray-700"
-                        onClick={() => setShowProfileMenu(false)}
-                      >
-                        Profile
-                      </Link>
-                      <Link
-                        to="/settings"
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-violet-50 dark:text-gray-300 dark:hover:bg-gray-700"
-                        onClick={() => setShowProfileMenu(false)}
-                      >
-                        Settings
-                      </Link>
-                      <hr className="my-2 border-gray-200 dark:border-gray-700" />
                       <button
                         onClick={() => {
                           logout();
                           setShowProfileMenu(false);
                         }}
-                        className="flex w-full items-center px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-gray-700"
+                        className="flex min-h-11 w-full items-center px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-gray-700"
                       >
                         <ArrowRightOnRectangleIcon className="mr-2 h-4 w-4" />
                         Logout

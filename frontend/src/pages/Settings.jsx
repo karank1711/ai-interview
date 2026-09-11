@@ -349,10 +349,10 @@ const Settings = ({ user, setUser }) => {
   ];
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-slate-50 px-4 py-8 dark:bg-[#070b16] sm:px-6 lg:px-8">
+    <div className="min-h-[calc(100vh-4rem)] bg-slate-50 px-3 py-6 dark:bg-[#070b16] sm:px-6 sm:py-8 lg:px-8">
       <div className="mx-auto max-w-6xl">
-        <div className="mb-8 flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-violet-500 text-white shadow-sm">
+        <div className="mb-8 flex min-w-0 items-center gap-3 sm:gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-violet-500 text-white shadow-sm">
             <Cog6ToothIcon className="h-6 w-6" />
           </div>
           <div>

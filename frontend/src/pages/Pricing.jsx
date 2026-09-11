@@ -45,17 +45,17 @@ const Pricing = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#070b16] py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           className="text-center mb-12"
         >
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+          <h1 className="mb-4 text-[clamp(1.5rem,6vw,2.25rem)] font-bold text-gray-900 dark:text-white">
             Pricing Plans
           </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
+          <p className="mx-auto max-w-3xl text-[clamp(0.95rem,3.6vw,1.25rem)] text-gray-600 dark:text-gray-400">
             Choose the perfect plan for your interview preparation needs
           </p>
         </motion.div>
@@ -67,7 +67,7 @@ const Pricing = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: index * 0.1 }}
-              className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 ${
+              className={`rounded-xl bg-white p-5 shadow-lg dark:bg-gray-800 sm:p-8 ${
                 plan.highlighted ? 'ring-2 ring-blue-500' : ''
               }`}
             >

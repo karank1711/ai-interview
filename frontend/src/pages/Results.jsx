@@ -119,7 +119,7 @@ const Results = ({ user }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#070b16] py-8">
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-[1400px] mx-auto px-3 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -134,7 +134,7 @@ const Results = ({ user }) => {
             </div>
           )}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            <h1 className="mb-2 text-[clamp(1.35rem,5vw,1.875rem)] font-bold text-gray-900 dark:text-white">
               Interview Results
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
@@ -180,7 +180,7 @@ const Results = ({ user }) => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div className="text-center">
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Overall Score</p>
-                  <p className={`text-4xl font-bold ${gradingReady ? getScoreColor(overallScore) : 'text-slate-500 dark:text-slate-300'}`}>
+                  <p className={`text-[clamp(1.75rem,8vw,2.25rem)] font-bold ${gradingReady ? getScoreColor(overallScore) : 'text-slate-500 dark:text-slate-300'}`}>
                     {gradingReady ? <AnimatedCounter value={`${overallScore}%`} /> : 'N/A'}
                   </p>
                   <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mt-2">
@@ -205,7 +205,7 @@ const Results = ({ user }) => {
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Grade</p>
-                  <p className="text-4xl font-bold text-gray-900 dark:text-white">
+                  <p className="text-[clamp(1.75rem,8vw,2.25rem)] font-bold text-gray-900 dark:text-white">
                     {gradingReady
                       ? (overallScore >= 85 ? 'A' : overallScore >= 70 ? 'B' : overallScore >= 55 ? 'C' : overallScore >= 40 ? 'D' : 'F')
                       : 'N/A'}

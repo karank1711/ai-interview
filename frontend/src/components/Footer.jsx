@@ -5,7 +5,7 @@ import AnimatedBrain from './AnimatedBrain';
 const Footer = () => {
   return (
     <footer className="bg-[#0b1224] text-white">
-      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl px-3 py-10 sm:px-6 sm:py-12 lg:px-8">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <Link to="/" className="mb-4 flex items-center gap-2">
@@ -44,7 +44,7 @@ const Footer = () => {
             <ul className="space-y-3 text-sm text-slate-400">
               <li className="flex items-start gap-2">
                 <EnvelopeIcon className="mt-0.5 h-4 w-4 text-violet-400" />
-                <a href="mailto:karank47417@gmail.com" className="hover:text-white">karank47417@gmail.com</a>
+                <a href="mailto:karank47417@gmail.com" className="break-all hover:text-white">karank47417@gmail.com</a>
               </li>
               <li className="flex items-start gap-2">
                 <PhoneIcon className="mt-0.5 h-4 w-4 text-emerald-400" />

@@ -77,11 +77,11 @@ export default function ProgressTracking() {
 
   return (
     <div className="min-h-screen bg-slate-50 py-8 dark:bg-[#070b16]">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl px-3 sm:px-6 lg:px-8">
         <BackButton fallback="/dashboard" />
 
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Progress Tracking</h1>
+          <h1 className="text-[clamp(1.35rem,5vw,1.875rem)] font-bold text-slate-900 dark:text-white">Progress Tracking</h1>
           <p className="mt-2 max-w-2xl text-slate-500 dark:text-slate-400">
             A combined view of your real interview activity, scores, and results.
           </p>

@@ -41,9 +41,9 @@ const Login = ({ setUser }) => {
       showPopup({
         type: 'success',
         title: 'Welcome back',
-        message: 'You are signed in. Redirecting you to your dashboard.',
+        message: 'You are signed in. Redirecting you to Home.',
       });
-      navigate('/dashboard');
+      navigate('/');
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.');
     } finally {
@@ -74,12 +74,12 @@ const Login = ({ setUser }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8 px-3 sm:px-6 lg:px-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
-        className="max-w-md w-full space-y-8"
+        className="w-full max-w-md min-w-0 space-y-8"
       >
         <div className="text-center">
           <motion.div
@@ -90,10 +90,10 @@ const Login = ({ setUser }) => {
           >
             <span className="text-white font-bold text-2xl">IQ</span>
           </motion.div>
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <h2 className="break-words text-[clamp(1.35rem,5.5vw,1.875rem)] font-bold text-gray-900 dark:text-white">
             Welcome back
           </h2>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p className="mt-2 break-words px-1 text-sm text-gray-600 dark:text-gray-400">
             Sign in to your InterviewIQ account
           </p>
         </div>
@@ -102,7 +102,7 @@ const Login = ({ setUser }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="glassmorphism rounded-2xl p-8 shadow-xl"
+          className="glassmorphism rounded-2xl p-5 shadow-xl sm:p-8"
         >
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
@@ -162,7 +162,7 @@ const Login = ({ setUser }) => {
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center">
                 <input
                   id="remember-me"
@@ -205,7 +205,7 @@ const Login = ({ setUser }) => {
 
             <div className="text-center">
               <span className="text-sm text-gray-600 dark:text-gray-400">
-                Don't have an account?{' '}
+                Don&apos;t have an account?{' '}
                 <Link
                   to="/signup"
                   className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"

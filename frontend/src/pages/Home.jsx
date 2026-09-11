@@ -14,6 +14,39 @@ import AnimatedText from '../components/AnimatedText';
 import HeroSlideshow from '../components/HeroSlideshow';
 import HomeCtaBanner from '../components/HomeCtaBanner';
 
+function HeroCtas({ user, variant = 'overlay' }) {
+  const secondaryClass = variant === 'overlay'
+    ? 'inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-white/40 bg-white/10 px-6 py-3 font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20 sm:w-auto'
+    : 'inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-gray-300 bg-white px-6 py-3 font-medium text-gray-800 transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 sm:w-auto';
+
+  if (!user) {
+    return (
+      <>
+        <Link
+          to="/signup"
+          className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-3 font-medium text-white transition-all hover:from-blue-600 hover:to-purple-700 hover:scale-105 sm:w-auto"
+        >
+          Get Started Free
+          <ArrowRightIcon className="ml-2 h-5 w-5" />
+        </Link>
+        <Link to="/features" className={secondaryClass}>
+          Learn More
+        </Link>
+      </>
+    );
+  }
+
+  return (
+    <Link
+      to="/dashboard"
+      className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-[#ffffff] px-6 py-3 font-semibold text-[#1d4ed8] shadow-md transition-colors hover:bg-[#dbeafe] hover:text-[#1e3a8a] sm:w-auto"
+    >
+      Go to Dashboard
+      <ArrowRightIcon className="ml-2 h-5 w-5" />
+    </Link>
+  );
+}
+
 const Home = ({ user }) => {
   const [heroSlideIndex, setHeroSlideIndex] = useState(0);
 
@@ -85,19 +118,19 @@ const Home = ({ user }) => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#070b16]">
       {/* Hero Section */}
-      <section className="px-4 sm:px-6 lg:px-8 pt-6 pb-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="relative isolate aspect-[16/9] w-full overflow-hidden rounded-3xl bg-slate-950 shadow-xl">
+      <section className="px-3 pt-4 pb-4 sm:px-6 sm:pt-6 lg:px-8">
+        <div className="mx-auto max-w-7xl min-w-0">
+          <div className="relative isolate aspect-[16/10] min-h-[12.5rem] w-full overflow-hidden rounded-2xl bg-slate-950 shadow-xl sm:min-h-0 sm:rounded-3xl md:aspect-[16/9]">
             <HeroSlideshow showControls objectFit="contain" onIndexChange={setHeroSlideIndex} />
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-slate-950/55 via-slate-950/15 to-transparent" />
+            <div className="pointer-events-none absolute inset-0 hidden bg-gradient-to-r from-slate-950/70 via-slate-950/25 to-transparent sm:block" />
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
-              className="relative z-10 flex h-full w-full max-w-2xl flex-col justify-center space-y-6 p-6 sm:p-8 md:p-14"
+              className="relative z-10 hidden h-full w-full min-w-0 max-w-2xl flex-col justify-center space-y-6 p-8 sm:flex md:p-14"
             >
-              <div className="space-y-4">
-                <div className="inline-flex items-center rounded-full bg-white/15 px-4 py-2 backdrop-blur-sm">
+              <div className="min-w-0 space-y-2 sm:space-y-4">
+                <div className="hidden items-center rounded-full bg-white/15 px-3 py-1.5 backdrop-blur-sm sm:inline-flex sm:px-4 sm:py-2">
                   <SparklesIcon className="mr-2 h-4 w-4 text-white" />
                   <span className="text-sm font-medium text-white">
                     AI-Powered Interview Practice
@@ -108,7 +141,7 @@ const Home = ({ user }) => {
                   as="h1"
                   key={heroSlideIndex}
                   replayKey={heroSlideIndex}
-                  className="text-3xl font-bold leading-tight sm:text-4xl md:text-6xl"
+                  className="break-words text-[clamp(1.15rem,5.4vw,3.75rem)] font-bold leading-tight"
                   text={"Your Dream Job\nis Closer Than You Think"}
                   lineClassNames={[
                     'bg-[linear-gradient(90deg,#38BDF8_0%,#8B5CF6_50%,#E879F9_100%)] bg-clip-text text-transparent',
@@ -116,41 +149,17 @@ const Home = ({ user }) => {
                   ]}
                 />
 
-                <p className="max-w-2xl text-lg text-white/85 md:text-xl">
+                <p className="hidden max-w-2xl text-lg text-white/85 sm:block md:text-xl">
                   Practice with AI-powered mock interviews, get instant feedback,
                   and land your dream job with confidence.
                 </p>
               </div>
 
-              <div className="flex flex-col gap-4 sm:flex-row">
-                {!user ? (
-                  <>
-                    <Link
-                      to="/signup"
-                      className="inline-flex items-center rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-3 font-medium text-white transition-all hover:from-blue-600 hover:to-purple-700 hover:scale-105"
-                    >
-                      Get Started Free
-                      <ArrowRightIcon className="ml-2 h-5 w-5" />
-                    </Link>
-                    <Link
-                      to="/features"
-                      className="inline-flex items-center rounded-xl border border-white/40 bg-white/10 px-6 py-3 font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/20"
-                    >
-                      Learn More
-                    </Link>
-                  </>
-                ) : (
-                  <Link
-                    to="/dashboard"
-                    className="inline-flex items-center rounded-xl bg-[#ffffff] px-6 py-3 font-semibold text-[#1d4ed8] shadow-md transition-colors hover:bg-[#dbeafe] hover:text-[#1e3a8a]"
-                  >
-                    Go to Dashboard
-                    <ArrowRightIcon className="ml-2 h-5 w-5" />
-                  </Link>
-                )}
+              <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
+                <HeroCtas user={user} />
               </div>
 
-              <div className="flex items-center space-x-8">
+              <div className="hidden items-center space-x-8 sm:flex">
                 <AvatarStack />
                 <div>
                   <div className="flex items-center">
@@ -165,23 +174,39 @@ const Home = ({ user }) => {
               </div>
             </motion.div>
           </div>
+          <div className="min-w-0 pt-4 sm:hidden">
+            <h1 className="break-words text-[clamp(1.25rem,6.5vw,1.75rem)] font-bold leading-tight">
+              <span className="block bg-[linear-gradient(90deg,#38BDF8_0%,#8B5CF6_50%,#E879F9_100%)] bg-clip-text text-transparent">
+                Your Dream Job
+              </span>
+              <span className="block bg-[linear-gradient(90deg,#38BDF8_0%,#8B5CF6_50%,#E879F9_100%)] bg-clip-text text-transparent">
+                is Closer Than
+              </span>
+              <span className="block bg-[linear-gradient(90deg,#38BDF8_0%,#8B5CF6_50%,#E879F9_100%)] bg-clip-text text-transparent">
+                You Think
+              </span>
+            </h1>
+            <div className="mt-4 flex flex-col gap-3">
+              <HeroCtas user={user} variant="page" />
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="bg-gray-50 py-16 dark:bg-[#070b16]">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <section className="bg-gray-50 py-10 dark:bg-[#070b16] sm:py-16">
+        <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between"
           >
-            <div>
-              <h2 className="mb-2 text-3xl font-bold text-gray-900 dark:text-white md:text-4xl">
+            <div className="min-w-0">
+              <h2 className="mb-2 break-words text-[clamp(1.2rem,5vw,2.25rem)] font-bold text-gray-900 dark:text-white">
                 Why Choose InterviewIQ?
               </h2>
-              <p className="max-w-3xl text-lg text-gray-600 dark:text-gray-300">
+              <p className="max-w-3xl break-words text-[clamp(0.9rem,3.4vw,1.125rem)] text-gray-600 dark:text-gray-300">
                 Our AI-powered platform provides everything you need to succeed in your interviews
               </p>
             </div>
@@ -210,7 +235,7 @@ const Home = ({ user }) => {
       </section>
 
       {/* Testimonials Section */}
-      <section className="px-4 pb-8 sm:px-6 lg:px-8">
+      <section className="px-3 pb-8 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -218,10 +243,10 @@ const Home = ({ user }) => {
             transition={{ duration: 0.8 }}
             className="mb-8 text-center"
           >
-            <h2 className="mb-4 text-3xl font-bold text-gray-900 dark:text-white md:text-4xl">
+            <h2 className="mb-4 text-[clamp(1.35rem,5vw,2.25rem)] font-bold text-gray-900 dark:text-white md:text-4xl">
               What Our Users Say
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300">
+            <p className="text-[clamp(0.95rem,3.6vw,1.25rem)] text-gray-600 dark:text-gray-300">
               Join thousands of professionals who've landed their dream jobs
             </p>
           </motion.div>

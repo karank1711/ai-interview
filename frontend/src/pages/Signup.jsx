@@ -80,7 +80,7 @@ const Signup = ({ setUser }) => {
       }
 
       setUser(response.data.user);
-      navigate('/dashboard');
+      navigate('/');
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {
@@ -103,9 +103,9 @@ const Signup = ({ setUser }) => {
       showPopup({
         type: 'success',
         title: 'Email verified',
-        message: 'Your account is active. Redirecting you to the dashboard.',
+        message: 'Your account is active. Redirecting you to Home.',
       });
-      navigate('/dashboard');
+      navigate('/');
     } catch (err) {
       setError(err.message || 'Wrong verification code. Please try again.');
     } finally {
@@ -157,18 +157,18 @@ const Signup = ({ setUser }) => {
 
   if (verificationStep) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8 px-3 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="max-w-md w-full space-y-8"
+          className="w-full max-w-md min-w-0 space-y-8"
         >
           <div className="text-center">
             <div className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mb-4">
               <span className="text-white font-bold text-2xl">IQ</span>
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+            <h2 className="text-[clamp(1.5rem,6vw,1.875rem)] font-bold text-gray-900 dark:text-white">
               Verify your email
             </h2>
             <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
@@ -179,7 +179,7 @@ const Signup = ({ setUser }) => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="glassmorphism rounded-2xl p-8 shadow-xl"
+            className="glassmorphism rounded-2xl p-5 shadow-xl sm:p-8"
           >
             <form className="space-y-6" onSubmit={handleVerifyCode}>
               {error && (
@@ -231,12 +231,12 @@ const Signup = ({ setUser }) => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8 px-3 sm:px-6 lg:px-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
-        className="max-w-md w-full space-y-8"
+        className="w-full max-w-md min-w-0 space-y-8"
       >
         <div className="text-center">
           <motion.div
@@ -247,7 +247,7 @@ const Signup = ({ setUser }) => {
           >
             <span className="text-white font-bold text-2xl">IQ</span>
           </motion.div>
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <h2 className="text-[clamp(1.5rem,6vw,1.875rem)] font-bold text-gray-900 dark:text-white">
             Create your account
           </h2>
           <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
@@ -259,7 +259,7 @@ const Signup = ({ setUser }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="glassmorphism rounded-2xl p-8 shadow-xl"
+          className="glassmorphism rounded-2xl p-5 shadow-xl sm:p-8"
         >
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (

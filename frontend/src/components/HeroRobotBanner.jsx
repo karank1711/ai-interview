@@ -74,7 +74,7 @@ export default function HeroRobotBanner({
 }) {
   const icons = ICON_SETS[variant] || ICON_SETS.about;
   return (
-    <section className="relative mb-10 overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-50 via-sky-50 to-violet-100 px-5 py-8 dark:from-[#121a2e] dark:via-indigo-950 dark:to-[#0b1224] sm:px-8 sm:py-10">
+    <section className="relative mb-10 overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-50 via-sky-50 to-violet-100 px-4 py-6 dark:from-[#121a2e] dark:via-indigo-950 dark:to-[#0b1224] sm:px-8 sm:py-10">
       <div className="pointer-events-none absolute -right-10 top-0 h-40 w-40 rounded-full bg-violet-200/50 blur-3xl" />
       <div className="pointer-events-none absolute -left-8 bottom-0 h-32 w-32 rounded-full bg-sky-200/50 blur-3xl" />
       <div className="relative grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_auto]">
@@ -84,14 +84,14 @@ export default function HeroRobotBanner({
               {badge}
             </span>
           ) : null}
-          <h1 className="break-words text-3xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-4xl md:text-5xl">
+          <h1 className="break-words text-[clamp(1.5rem,6.5vw,3rem)] font-bold tracking-tight text-slate-900 dark:text-white">
             {title}
           </h1>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-500 dark:text-slate-300 sm:text-base">
             {subtitle}
           </p>
         </div>
-        <div className="relative mx-auto flex h-64 w-56 shrink-0 flex-col items-center sm:h-72 sm:w-64">
+        <div className="relative mx-auto flex h-56 w-44 max-w-full shrink-0 flex-col items-center sm:h-72 sm:w-64">
           {extra ? (
             <div className="relative z-20 mb-2 max-w-[11.5rem] rounded-2xl bg-white px-3 py-2 text-center text-xs font-semibold leading-snug text-violet-600 shadow-md ring-1 ring-slate-100 dark:bg-slate-800 dark:text-violet-300 dark:ring-slate-700">
               {extra}

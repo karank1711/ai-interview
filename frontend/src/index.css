@@ -57,6 +57,25 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', system-ui, sans-serif;
+    overflow-x: clip;
+  }
+
+  html, #root {
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  h1, h2, h3, p, li, label {
+    overflow-wrap: break-word;
+  }
+
+  img, video, canvas {
+    max-width: 100%;
+    height: auto;
+  }
+
+  svg {
+    max-width: 100%;
   }
 
   html.dark,

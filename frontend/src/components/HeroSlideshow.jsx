@@ -67,7 +67,7 @@ function HeroSlideshow({
             type="button"
             aria-label="Previous slide"
             onClick={() => go(-1)}
-            className="absolute left-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm transition hover:bg-white/35 md:left-5"
+            className="absolute left-1.5 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm transition hover:bg-white/35 sm:left-3 sm:h-10 sm:w-10 md:left-5"
           >
             <ChevronLeftIcon className="h-5 w-5" />
           </button>
@@ -75,21 +75,25 @@ function HeroSlideshow({
             type="button"
             aria-label="Next slide"
             onClick={() => go(1)}
-            className="absolute right-3 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm transition hover:bg-white/35 md:right-5"
+            className="absolute right-1.5 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm transition hover:bg-white/35 sm:right-3 sm:h-10 sm:w-10 md:right-5"
           >
             <ChevronRightIcon className="h-5 w-5" />
           </button>
-          <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-2">
+          <div className="absolute bottom-2 left-1/2 z-20 flex -translate-x-1/2 gap-1.5 sm:bottom-4 sm:gap-2">
             {slides.map((_, dotIndex) => (
               <button
                 key={dotIndex}
                 type="button"
                 aria-label={`Go to slide ${dotIndex + 1}`}
                 onClick={() => setIndex(dotIndex)}
-                className={`h-2.5 w-2.5 rounded-full transition ${
-                  dotIndex === index ? 'bg-sky-400' : 'bg-white/50 hover:bg-white/80'
-                }`}
-              />
+                className="flex h-11 w-11 items-center justify-center sm:h-auto sm:w-auto"
+              >
+                <span
+                  className={`block h-2.5 w-2.5 rounded-full transition ${
+                    dotIndex === index ? 'bg-sky-400' : 'bg-white/50 hover:bg-white/80'
+                  }`}
+                />
+              </button>
             ))}
           </div>
         </>

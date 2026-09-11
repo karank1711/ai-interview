@@ -21,9 +21,9 @@ const AuthCallback = ({ setUser }) => {
         showPopup({
           type: 'success',
           title: 'Welcome back',
-          message: 'You are signed in. Redirecting you to your dashboard.',
+          message: 'You are signed in. Redirecting you to Home.',
         });
-        navigate('/dashboard', { replace: true });
+        navigate('/', { replace: true });
       } catch (err) {
         if (cancelled) return;
         setError(mapAuthError(err, err.message || 'Sign-in failed.'));

@@ -130,24 +130,24 @@ const Dashboard = ({ user }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#070b16] py-6">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="relative isolate mb-8 min-h-[280px] overflow-hidden rounded-3xl shadow-xl md:min-h-[320px]"
+          className="relative isolate mb-8 min-h-[220px] overflow-hidden rounded-2xl shadow-xl sm:min-h-[280px] sm:rounded-3xl md:min-h-[320px]"
         >
           <HeroSlideshow showControls onIndexChange={setHeroSlideIndex} />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-950/50 to-slate-900/20" />
-          <div className="relative z-10 flex h-full min-h-[280px] max-w-2xl flex-col justify-center p-8 md:min-h-[320px] md:p-12">
-            <p className="mb-3 inline-flex w-fit items-center rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
+          <div className="relative z-10 flex h-full min-h-[220px] max-w-2xl min-w-0 flex-col justify-center p-4 sm:min-h-[280px] sm:p-8 md:min-h-[320px] md:p-12">
+            <p className="mb-3 inline-flex w-fit max-w-full truncate items-center rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
               AI-Powered Interview Platform
             </p>
             <AnimatedText
               as="h1"
               key={heroSlideIndex}
               replayKey={heroSlideIndex}
-              className="text-3xl font-bold text-white md:text-4xl"
+                  className="break-words text-[clamp(1.25rem,5vw,2.25rem)] font-bold text-white"
               text={`Welcome back, ${user?.name || 'there'}!`}
             />
             <p className="mt-3 max-w-xl text-white/85">

@@ -144,11 +144,11 @@ function App() {
           
           <Route 
             path="/login" 
-            element={!user ? <Login setUser={setUser} /> : <Navigate to="/dashboard" />} 
+            element={!user ? <Login setUser={setUser} /> : <Navigate to="/" />} 
           />
           <Route 
             path="/signup" 
-            element={!user ? <Signup setUser={setUser} /> : <Navigate to="/dashboard" />} 
+            element={!user ? <Signup setUser={setUser} /> : <Navigate to="/" />} 
           />
           <Route
             path="/auth/callback"
@@ -273,7 +273,7 @@ function AppShellLayout({ user, logout, interviewSession, showSidebar, routeKey,
   const contentShift = showSidebar && open && isDesktop ? '16rem' : '0rem';
   return (
     <div
-      className={`${interviewSession ? 'h-dvh overflow-hidden' : 'min-h-screen'} bg-gray-50 dark:bg-[#070b16] transition-colors duration-300`}
+        className={`${interviewSession ? 'h-dvh overflow-hidden' : 'min-h-screen'} w-full max-w-full overflow-x-clip bg-gray-50 dark:bg-[#070b16] transition-colors duration-300`}
     >
       <Navbar user={user} logout={logout} showSidebarToggle={showSidebar} />
       {showSidebar && open && !isDesktop ? (
@@ -286,7 +286,7 @@ function AppShellLayout({ user, logout, interviewSession, showSidebar, routeKey,
       ) : null}
       {showSidebar ? <Sidebar /> : null}
       <div
-        className="min-h-[calc(100vh-4rem)]"
+        className="min-h-[calc(100vh-4rem)] min-w-0 overflow-x-clip"
         style={{
           marginLeft: contentShift,
           transition: isDesktop ? 'margin-left 420ms cubic-bezier(0.22, 1, 0.36, 1)' : 'none',

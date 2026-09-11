@@ -41,14 +41,14 @@ export default function FeatureCard({
           ) : null}
         </div>
 
-        <div className="flex flex-1 flex-col p-5">
+        <div className="flex flex-1 flex-col p-4 sm:p-5">
           <div className="mb-2 flex items-start gap-2">
             {Icon ? (
               <span className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-r ${color} text-white`}>
                 <Icon className="h-4 w-4" />
               </span>
             ) : null}
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white">{heading}</h3>
+            <h3 className="min-w-0 break-words text-lg font-bold text-gray-900 dark:text-white">{heading}</h3>
           </div>
           <p className="mb-4 text-sm leading-relaxed text-gray-600 dark:text-gray-300">{description}</p>
           <div className="mt-auto flex items-center justify-between pt-1">

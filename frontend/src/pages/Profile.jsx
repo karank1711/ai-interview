@@ -93,12 +93,12 @@ const Profile = ({ user, setUser }) => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-slate-50 px-4 py-8 dark:bg-[#070b16] sm:px-6 lg:px-8">
+    <div className="min-h-[calc(100vh-4rem)] bg-slate-50 px-3 py-6 dark:bg-[#070b16] sm:px-6 sm:py-8 lg:px-8">
       <div className="mx-auto max-w-6xl space-y-6">
-        <div className="overflow-hidden rounded-2xl bg-gradient-to-r from-sky-100 via-indigo-50 to-violet-100 px-6 py-7 sm:px-8 dark:from-slate-800 dark:via-indigo-950 dark:to-slate-800">
+        <div className="overflow-hidden rounded-2xl bg-gradient-to-r from-sky-100 via-indigo-50 to-violet-100 px-4 py-6 sm:px-8 sm:py-7 dark:from-slate-800 dark:via-indigo-950 dark:to-slate-800">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm dark:bg-slate-900">
+            <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white shadow-sm dark:bg-slate-900">
                 <UserCircleIcon className="h-8 w-8 text-indigo-500" />
               </div>
               <div>

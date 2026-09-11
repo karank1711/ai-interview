@@ -85,7 +85,7 @@ const Contact = () => {
 
   return (
     <div className="bg-slate-50 py-8 dark:bg-[#070b16]">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl px-3 sm:px-6 lg:px-8">
         <HeroRobotBanner
           badge="Get in touch"
           title="Contact Us"
@@ -228,7 +228,7 @@ const Contact = () => {
 
         <section className="mb-4 overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-50 via-sky-50 to-violet-100 p-6 dark:from-slate-800 dark:to-indigo-950 sm:p-10">
           <div className="mb-8 max-w-2xl">
-            <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Let's Build Something Great Together</h2>
+            <h2 className="text-[clamp(1.35rem,5vw,1.875rem)] font-bold text-slate-900 dark:text-white">Let's Build Something Great Together</h2>
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-300">
               Whether you need help practicing interviews or want to share feedback, we're ready when you are.
             </p>
