@@ -4,26 +4,9 @@ import { mapAuthError, toAppUser } from '../utils/authErrors.js';
 import { clearPageCache } from '../utils/pageDataCache.js';
 import { perfLog } from '../utils/perf.js';
 import { applyTheme, mergeSettings, readLocalSettings, writeLocalSettings } from '../utils/userSettings.js';
+import { getApiBaseUrl } from '../utils/apiBaseUrl.js';
 
-/** Ensures requests hit Express routes mounted under `/api` (common deploy mistake: origin only). */
-function normalizeApiBaseUrl(raw) {
-  const fallback = 'http://localhost:8081/api';
-  if (!raw || typeof raw !== 'string') return fallback;
-  const trimmed = raw.trim();
-  try {
-    const u = new URL(trimmed);
-    const p = u.pathname.replace(/\/+$/, '') || '/';
-    if (p === '/') {
-      return `${u.origin}/api`;
-    }
-    return `${u.origin}${p}`;
-  } catch {
-    const noTrail = trimmed.replace(/\/+$/, '');
-    return noTrail.endsWith('/api') ? noTrail : `${noTrail}/api`;
-  }
-}
-
-const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_URL);
+const API_BASE_URL = getApiBaseUrl();
 const AUTH_REQUEST_TIMEOUT_MS = 12000;
 const SIGNUP_TIMEOUT_MS = 15000;
 
