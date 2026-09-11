@@ -2,13 +2,13 @@ import express from "express";
 import cors from "cors";
 import morgan from "morgan";
 import { env, validateEnv } from "./config/env.js";
-import { connectDb } from "./config/db.js";
-import { initFirebaseAdmin } from "./config/firebase.js";
 import authRoutes from "./routes/auth.js";
 import interviewRoutes from "./routes/interviews.js";
 import questionRoutes from "./routes/questions.js";
 import resultRoutes from "./routes/results.js";
+import contactRoutes from "./routes/contact.js";
 import { requireAuth } from "./middleware/auth.js";
+import { prefetchJwks } from "./utils/jwtVerify.js";
 
 const app = express();
 const normalizeOrigin = (origin) => origin.trim().replace(/\/+$/, "").toLowerCase();
@@ -70,6 +70,7 @@ app.get("/api/health", (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/contact", contactRoutes);
 app.use("/api/interviews", requireAuth, interviewRoutes);
 app.use("/api/questions", requireAuth, questionRoutes);
 app.use("/api/results", requireAuth, resultRoutes);
@@ -84,13 +85,24 @@ app.use((error, req, res, next) => {
 
 async function start() {
   validateEnv();
-  await connectDb();
-  initFirebaseAdmin();
+
+  if (env.hasGoogleOAuthCredentials) {
+    console.log(
+      "Google OAuth credentials are loaded in backend env. Enable Google in Supabase Dashboard → Authentication → Providers → Google. Do not add GOOGLE_CLIENT_SECRET to the frontend."
+    );
+  }
 
   console.log(
     `CORS: FRONTEND_URLS count=${env.frontendOrigins.length}, CORS_ALLOW_VERCEL_APP=${env.corsAllowVercelApp}`
   );
+  console.log(
+    `Resend: keyLoaded=${Boolean(env.resendApiKey)} from=${env.resendFromEmail} to=${env.contactToEmail}`
+  );
 
+  console.log(`Groq TTS: configured=${Boolean(env.groqApiKey)}`);
+  console.log(
+    `Hugging Face questions: configured=${Boolean(env.huggingfaceApiKey)} model=${env.huggingfaceQuestionModel} provider=${env.huggingfaceInferenceProvider}`
+  );
   app.listen(env.port, () => {
     console.log(`Backend listening on http://localhost:${env.port}`);
    });

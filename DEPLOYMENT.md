@@ -30,10 +30,8 @@ nano .env
 ```
 
 Update the following variables in `.env`:
-- `DB_PASSWORD` - Database password
-- `JWT_SECRET` - Secure JWT secret (change this!)
-- `MAIL_USERNAME` - Email for notifications
-- `MAIL_PASSWORD` - Email app password
+- `SUPABASE_URL` - Supabase project URL
+- `SUPABASE_SERVICE_ROLE_KEY` - Supabase secret key (server only)
 
 ### 3. Deploy Application
 
@@ -129,7 +127,8 @@ docker run -d \
   -e SPRING_DATASOURCE_URL=jdbc:mysql://database:3306/interviewiq \
   -e SPRING_DATASOURCE_USERNAME=interviewiq_user \
   -e SPRING_DATASOURCE_PASSWORD=interviewiq_password \
-  -e JWT_SECRET=your-jwt-secret \
+  -e SUPABASE_URL=https://your-project-ref.supabase.co \
+  -e SUPABASE_SERVICE_ROLE_KEY=sb_secret_your_secret_key \
   -p 8080:8080 \
   interviewiq-backend
 ```
@@ -165,10 +164,8 @@ For production, replace the self-signed certificates:
 - `DB_PASSWORD` - Database password
 
 ### Application Configuration
-- `SPRING_PROFILES_ACTIVE` - Spring profile (development/production)
-- `SERVER_PORT` - Backend port (default: 8080)
-- `JWT_SECRET` - JWT signing secret (change this!)
-- `JWT_EXPIRATION` - Token expiration in milliseconds
+- `SUPABASE_URL` - Supabase project URL
+- `SUPABASE_SERVICE_ROLE_KEY` - Supabase secret key (server only)
 
 ### Email Configuration
 - `MAIL_HOST` - SMTP server (default: smtp.gmail.com)
@@ -263,7 +260,7 @@ docker system prune -a
 ### Security
 
 1. Change default passwords
-2. Use strong JWT secret
+2. Keep the Supabase secret key on the server only
 3. Configure proper SSL certificates
 4. Set up firewall rules
 5. Enable HTTPS only

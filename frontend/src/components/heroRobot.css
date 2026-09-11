@@ -1,0 +1,58 @@
+.hero-robot-bob {
+  animation: hero-robot-bob 4.2s ease-in-out infinite;
+}
+
+.hero-float-a {
+  animation: hero-float 5s ease-in-out infinite;
+}
+
+.hero-float-b {
+  animation: hero-float 6.2s ease-in-out infinite reverse;
+}
+
+.hero-float-c {
+  animation: hero-float 4.6s ease-in-out infinite 0.4s;
+}
+
+.hero-spin-slow {
+  animation: hero-spin 14s linear infinite;
+}
+
+@keyframes hero-robot-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes hero-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-6deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(6deg);
+  }
+}
+
+@keyframes hero-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-robot-bob,
+  .hero-float-a,
+  .hero-float-b,
+  .hero-float-c,
+  .hero-spin-slow {
+    animation: none;
+  }
+}

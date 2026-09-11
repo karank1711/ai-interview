@@ -14,20 +14,14 @@ A modern, fully responsive AI-powered web platform for mock interview practice d
 - **Heroicons** - Beautiful SVG icons
 
 ### Backend
-- **Java 17+** - Modern Java with latest features
-- **Spring Boot 3.x** - Enterprise-grade framework
-- **Spring Security** - Comprehensive security framework
-- **JWT Authentication** - Token-based authentication
-- **Spring Data JPA** - Database abstraction layer
-- **MySQL/PostgreSQL** - Relational database support
-- **Lombok** - Reduce boilerplate code
-- **Maven** - Build and dependency management
-- **SpringDoc OpenAPI** - API documentation
+- **Node.js + Express** - REST API
+- **Supabase Auth** - Email/password and Google OAuth
+- **Supabase PostgreSQL** - Profiles, interviews, answers, and results
 
 ## Features
 
 ### Core Features
-- **Authentication System**: JWT-based secure login/signup with email verification
+- **Authentication System**: Supabase Auth (email/password and Google OAuth)
 - **AI Interview Agent**: Field-specific interview questions with experience levels
 - **AI Interview Experience**: Real-time webcam/microphone integration with voice-to-text
 - **AI Evaluation System**: Comprehensive scoring and feedback system
@@ -170,10 +164,8 @@ spring.datasource.password=your_password
 ## API Endpoints
 
 ### Authentication
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
-- `POST /api/auth/refresh` - Refresh JWT token
-- `POST /api/auth/verify-email` - Email verification
+- `GET /api/auth/me` - Current authenticated user
+- `PUT /api/auth/profile` - Update profile
 - `POST /api/auth/forgot-password` - Initiate password reset
 - `POST /api/auth/reset-password` - Reset password
 
@@ -215,11 +207,9 @@ spring.datasource.password=your_password
 - **Micro-interactions** - Hover states and feedback
 
 ### Security
-- **JWT Authentication** - Secure token-based auth
-- **Password Encryption** - BCrypt hashing
+- **Supabase Auth** - Session and access-token based auth
+- **Row Level Security** - Users can only access their own data
 - **CORS Configuration** - Cross-origin security
-- **Input Validation** - Comprehensive validation
-- **SQL Injection Prevention** - Parameterized queries
 
 ## Development Workflow
 

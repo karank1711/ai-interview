@@ -1,8 +1,10 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { authService } from '../services/authService';
+import OAuthButtons from '../components/OAuthButtons';
+import { usePopup } from '../components/AppPopup';
 
 const Login = ({ setUser }) => {
   const [formData, setFormData] = useState({
@@ -11,8 +13,14 @@ const Login = ({ setUser }) => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
+  const [error, setError] = useState(() => location.state?.error || '');
+  const { showPopup } = usePopup();
+
+  useEffect(() => {
+    import('./Dashboard');
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -30,6 +38,11 @@ const Login = ({ setUser }) => {
     try {
       const response = await authService.login(formData);
       setUser(response.data.user);
+      showPopup({
+        type: 'success',
+        title: 'Welcome back',
+        message: 'You are signed in. Redirecting you to your dashboard.',
+      });
       navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.');
@@ -38,16 +51,26 @@ const Login = ({ setUser }) => {
     }
   };
 
-  const handleGoogleLogin = () => {
-    // For now, show a message that Google login is coming soon
-    // In a real implementation, this would integrate with Google OAuth
-    setError('Google login coming soon! Please use email login for now.');
+  const handleGoogleLogin = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      await authService.signInWithGoogle();
+    } catch (err) {
+      setError(err.message || 'Google login failed. Please try again.');
+      setLoading(false);
+    }
   };
 
-  const handleLinkedInLogin = () => {
-    // For now, show a message that LinkedIn login is coming soon
-    // In a real implementation, this would integrate with LinkedIn OAuth
-    setError('LinkedIn login coming soon! Please use email login for now.');
+  const handleGitHubLogin = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      await authService.signInWithGitHub();
+    } catch (err) {
+      setError(err.message || 'GitHub login failed. Please try again.');
+      setLoading(false);
+    }
   };
 
   return (
@@ -204,31 +227,11 @@ const Login = ({ setUser }) => {
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={handleGoogleLogin}
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                <span className="sr-only">Sign in with Google</span>
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.267-6.053 2.267-4.827 0-8.44-3.84-8.44-8.667s3.613-8.667 8.44-8.667c2.4 0 4.133 1.067 5.467 2.213l2.4-2.4C18.133 1.333 15.733 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.133H12.48z"/>
-                </svg>
-                <span className="ml-2">Google</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleLinkedInLogin}
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                <span className="sr-only">Sign in with LinkedIn</span>
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-                </svg>
-                <span className="ml-2">LinkedIn</span>
-              </button>
-            </div>
+            <OAuthButtons
+              onGoogle={handleGoogleLogin}
+              onGitHub={handleGitHubLogin}
+              loading={loading}
+            />
           </div>
         </motion.div>
       </motion.div>

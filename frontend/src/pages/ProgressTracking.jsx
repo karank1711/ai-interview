@@ -1,68 +1,127 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import AnimatedCounter from '../components/AnimatedCounter';
+import BackButton from '../components/BackButton';
+import DetailMetricCard from '../components/DetailMetricCard';
+import TokenAnalytics from '../components/TokenAnalytics';
+import TokenRecentTable from '../components/TokenRecentTable';
 import { interviewService } from '../services/interviewService';
+import { readPageCache, writePageCache } from '../utils/pageDataCache';
+import { EMPTY_INTERVIEW_STATS, normalizeInterviewStats } from '../utils/interviewStats';
+import { buildProgressOverview, percent } from '../utils/tokenDetails';
 
-const ProgressTracking = () => {
-  const [stats, setStats] = useState({
-    total: 0,
-    completed: 0,
-    avgScore: 0,
-    passRate: 0,
-  });
-  const [loading, setLoading] = useState(true);
+const PROGRESS_CACHE_KEY = 'progress:v3';
+const DASHBOARD_CACHE_KEY = 'dashboard:v2';
+
+function readInitialCache() {
+  return readPageCache(PROGRESS_CACHE_KEY) || readPageCache(DASHBOARD_CACHE_KEY);
+}
+
+export default function ProgressTracking() {
+  const cached = readInitialCache();
+  const [interviews, setInterviews] = useState(cached?.interviews || []);
+  const [results, setResults] = useState(cached?.results || []);
+  const [stats, setStats] = useState(cached?.stats || EMPTY_INTERVIEW_STATS);
+  const [loading, setLoading] = useState(!cached);
 
   useEffect(() => {
-    const load = async () => {
+    let cancelled = false;
+
+    async function load() {
       try {
-        const [interviewResponse, resultResponse] = await Promise.all([
-          interviewService.getUserInterviews(0, 100),
-          interviewService.getResultsHistory(0, 100),
+        if (!readInitialCache()) setLoading(true);
+        const [interviewResponse, resultResponse, statsResponse] = await Promise.all([
+          interviewService.getUserInterviews(0, 50),
+          interviewService.getResultsHistory(0, 50),
+          interviewService.getInterviewStats(),
         ]);
-
-        const interviews = interviewResponse.data || [];
-        const results = resultResponse.data || [];
-        const completed = interviews.filter((item) => item.status === 'COMPLETED').length;
-        const avgScore = results.length
-          ? Math.round(results.reduce((sum, item) => sum + (item.overallScore || 0), 0) / results.length)
-          : 0;
-        const passRate = results.length
-          ? Math.round((results.filter((item) => item.passFail).length / results.length) * 100)
-          : 0;
-
-        setStats({
-          total: interviews.length,
-          completed,
-          avgScore,
-          passRate,
-        });
+        if (cancelled) return;
+        const next = {
+          interviews: interviewResponse.data || [],
+          results: resultResponse.data || [],
+          stats: normalizeInterviewStats(statsResponse.data),
+        };
+        writePageCache(PROGRESS_CACHE_KEY, next);
+        writePageCache(DASHBOARD_CACHE_KEY, next);
+        setInterviews(next.interviews);
+        setResults(next.results);
+        setStats(next.stats);
       } catch (error) {
         console.error('Failed to load progress:', error);
+        if (!cancelled && !cached) setStats(EMPTY_INTERVIEW_STATS);
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
-    };
+    }
+
     load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading progress...</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          className="h-16 w-16 rounded-full border-4 border-blue-500 border-t-transparent"
+        />
+      </div>
+    );
   }
 
+  const overview = buildProgressOverview({ stats, interviews, results });
+  const completionValue = percent(stats.completedInterviews, stats.totalInterviews);
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Progress Tracking</h1>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-4 border rounded-lg dark:border-gray-700"><p className="text-gray-600 dark:text-gray-300">Total Interviews</p><p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p></div>
-            <div className="p-4 border rounded-lg dark:border-gray-700"><p className="text-gray-600 dark:text-gray-300">Completed</p><p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.completed}</p></div>
-            <div className="p-4 border rounded-lg dark:border-gray-700"><p className="text-gray-600 dark:text-gray-300">Average Score</p><p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.avgScore}%</p></div>
-            <div className="p-4 border rounded-lg dark:border-gray-700"><p className="text-gray-600 dark:text-gray-300">Pass Rate</p><p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.passRate}%</p></div>
+    <div className="min-h-screen bg-slate-50 py-8 dark:bg-[#070b16]">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <BackButton fallback="/dashboard" />
+
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Progress Tracking</h1>
+          <p className="mt-2 max-w-2xl text-slate-500 dark:text-slate-400">
+            A combined view of your real interview activity, scores, and results.
+          </p>
+        </div>
+
+        <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {overview.metrics.map((metric) => (
+            <DetailMetricCard
+              key={metric.label}
+              label={metric.label}
+              value={metric.value}
+              hint={metric.hint}
+              tone={metric.tone}
+            />
+          ))}
+        </div>
+
+        <div className="mb-6 rounded-2xl bg-white p-6 shadow-md ring-1 ring-slate-100 dark:bg-slate-800 dark:ring-slate-700">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Completion rate</p>
+            <p className="text-sm font-semibold text-slate-900 dark:text-white">
+              <AnimatedCounter value={`${completionValue}%`} />
+            </p>
           </div>
-        </motion.div>
+          <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
+            <div
+              className="h-full rounded-full bg-emerald-500 transition-[width] duration-700"
+              style={{ width: `${completionValue}%` }}
+            />
+          </div>
+        </div>
+
+        {overview.charts?.length ? (
+          <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+            <TokenAnalytics charts={overview.charts} />
+          </div>
+        ) : null}
+
+        <TokenRecentTable table={overview.table} />
       </div>
     </div>
   );
-};
-
-export default ProgressTracking;
+}

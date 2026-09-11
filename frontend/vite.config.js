@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from 'tailwindcss'
 import autoprefixer from 'autoprefixer'
+import tailwindConfig from './tailwind.config.js'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -15,11 +16,14 @@ export default defineConfig({
       }
     }
   },
+  optimizeDeps: {
+    exclude: ['@mediapipe/tasks-vision'],
+  },
   css: {
     postcss: {
       plugins: [
-        tailwindcss,
-        autoprefixer,
+        tailwindcss(tailwindConfig),
+        autoprefixer(),
       ],
     },
   },

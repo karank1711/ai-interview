@@ -1,15 +1,50 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { EnvelopeIcon, PhoneIcon, MapPinIcon } from '@heroicons/react/24/outline';
+import {
+  ChatBubbleLeftRightIcon,
+  ClockIcon,
+  EnvelopeIcon,
+  LightBulbIcon,
+  MapPinIcon,
+  PaperAirplaneIcon,
+  PhoneIcon,
+  SparklesIcon,
+} from '@heroicons/react/24/outline';
+import HeroRobotBanner from '../components/HeroRobotBanner';
+import SelectDropdown from '../components/SelectDropdown';
+import { sendContactMessage } from '../services/contactService';
+import { usePopup } from '../components/AppPopup';
+
+const SUPPORT_CARDS = [
+  {
+    title: 'Quick Support',
+    text: 'Get help from our team when you need it.',
+    icon: ChatBubbleLeftRightIcon,
+    wrap: 'bg-sky-100 text-sky-600',
+  },
+  {
+    title: 'Expert Feedback',
+    text: 'Ask us anything about interview practice.',
+    icon: LightBulbIcon,
+    wrap: 'bg-violet-100 text-violet-600',
+  },
+  {
+    title: 'Your Feedback Matters',
+    text: 'Tell us how we can improve InterviewIQ.',
+    icon: SparklesIcon,
+    wrap: 'bg-emerald-100 text-emerald-600',
+  },
+];
 
 const Contact = () => {
+  const { showPopup } = usePopup();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    subject: '',
     message: '',
   });
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
 
   const handleChange = (e) => {
     setFormData({
@@ -21,161 +56,195 @@ const Contact = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage('');
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setMessage('Message sent successfully!');
-      setFormData({ name: '', email: '', message: '' });
+      const composed = formData.subject
+        ? `Subject: ${formData.subject}\n\n${formData.message}`
+        : formData.message;
+      await sendContactMessage({
+        name: formData.name,
+        email: formData.email,
+        message: composed,
+      });
+      setFormData({ name: '', email: '', subject: '', message: '' });
+      showPopup({
+        type: 'success',
+        title: 'Message sent',
+        message: 'Thanks for reaching out. We received your message and will reply soon.',
+      });
     } catch (error) {
-      setMessage('Failed to send message');
+      showPopup({
+        type: 'error',
+        title: 'Could not send message',
+        message: error.message || 'Failed to send your message. Please try again.',
+      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-12"
-        >
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            Contact Us
-          </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
-            Get in touch with our team for any questions or support
-          </p>
-        </motion.div>
+    <div className="bg-slate-50 py-8 dark:bg-[#070b16]">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <HeroRobotBanner
+          badge="Get in touch"
+          title="Contact Us"
+          subtitle="We're here to help. Have a question, feedback, or need support? Reach out and we'll get back to you as soon as possible."
+          variant="contact"
+        />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="mb-12 grid grid-cols-1 gap-6 lg:grid-cols-2">
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-100 dark:bg-gray-800 dark:ring-slate-700 sm:p-8"
           >
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                Send us a message
-              </h2>
-              
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Name
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Message
-                  </label>
-                  <textarea
-                    name="message"
-                    value={formData.message}
-                    onChange={handleChange}
-                    rows={4}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
-                </div>
-
-                {message && (
-                  <div className={`p-3 rounded-lg ${
-                    message.includes('success') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {message}
-                  </div>
-                )}
-
-                <button
-                  type="submit"
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Send us a message</h2>
+            <p className="mt-1 text-sm text-slate-500">Fill out the form below and we'll get back to you shortly.</p>
+            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-300">Name</label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
                   disabled={loading}
-                  className="w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-purple-700 disabled:opacity-50"
-                >
-                  {loading ? 'Sending...' : 'Send Message'}
-                </button>
-              </form>
-            </div>
+                  placeholder="Enter your name"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-violet-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-300">Email</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  disabled={loading}
+                  placeholder="Enter your email address"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-violet-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-300">Subject</label>
+                <SelectDropdown
+                  name="subject"
+                  aria-label="Subject"
+                  value={formData.subject}
+                  onChange={(subject) => setFormData({ ...formData, subject })}
+                  disabled={loading}
+                  placeholder="Select a subject"
+                  options={[
+                    { value: 'Support', label: 'Support' },
+                    { value: 'Feedback', label: 'Feedback' },
+                    { value: 'Partnership', label: 'Partnership' },
+                    { value: 'Other', label: 'Other' },
+                  ]}
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-300">Message</label>
+                <textarea
+                  name="message"
+                  value={formData.message}
+                  onChange={handleChange}
+                  rows={4}
+                  required
+                  disabled={loading}
+                  placeholder="Type your message here..."
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-violet-400 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-500 to-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:from-blue-600 hover:to-violet-700 disabled:opacity-50"
+              >
+                <PaperAirplaneIcon className="h-4 w-4" />
+                {loading ? 'Sending...' : 'Send Message'}
+              </button>
+            </form>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className="space-y-8"
-          >
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                Get in touch
-              </h2>
-              
-              <div className="space-y-4">
-                <div className="flex items-start">
-                  <EnvelopeIcon className="w-6 h-6 text-blue-500 mr-4 mt-1" />
+          <div className="space-y-6">
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-100 dark:bg-gray-800 dark:ring-slate-700 sm:p-8"
+            >
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Get in touch</h2>
+              <p className="mt-1 text-sm text-slate-500">We typically reply within 24 hours.</p>
+              <div className="mt-6 space-y-4">
+                <div className="flex items-start gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-100 text-sky-600">
+                    <EnvelopeIcon className="h-5 w-5" />
+                  </span>
                   <div>
-                    <h3 className="font-medium text-gray-900 dark:text-white">Email</h3>
-                    <p className="text-gray-600 dark:text-gray-400">support@interviewiq.com</p>
+                    <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Email</h3>
+                    <a href="mailto:karank47417@gmail.com" className="text-sm text-slate-500 hover:text-blue-500">
+                      karank47417@gmail.com
+                    </a>
                   </div>
                 </div>
-
-                <div className="flex items-start">
-                  <PhoneIcon className="w-6 h-6 text-green-500 mr-4 mt-1" />
+                <div className="flex items-start gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
+                    <PhoneIcon className="h-5 w-5" />
+                  </span>
                   <div>
-                    <h3 className="font-medium text-gray-900 dark:text-white">Phone</h3>
-                    <p className="text-gray-600 dark:text-gray-400">+1 (555) 123-4567</p>
+                    <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Phone</h3>
+                    <a href="tel:+918383075384" className="text-sm text-slate-500 hover:text-emerald-600">
+                      +91 8383075384
+                    </a>
                   </div>
                 </div>
-
-                <div className="flex items-start">
-                  <MapPinIcon className="w-6 h-6 text-purple-500 mr-4 mt-1" />
+                <div className="flex items-start gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-600">
+                    <MapPinIcon className="h-5 w-5" />
+                  </span>
                   <div>
-                    <h3 className="font-medium text-gray-900 dark:text-white">Office</h3>
-                    <p className="text-gray-600 dark:text-gray-400">123 Tech Street, San Francisco, CA 94105</p>
+                    <h3 className="text-sm font-semibold text-slate-900 dark:text-white">Office</h3>
+                    <p className="text-sm text-slate-500">Faridabad, Sec-91</p>
                   </div>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                Business Hours
-              </h2>
-              
-              <div className="space-y-2 text-gray-600 dark:text-gray-400">
-                <p>Monday - Friday: 9:00 AM - 6:00 PM PST</p>
-                <p>Saturday: 10:00 AM - 4:00 PM PST</p>
+            <div className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-100 dark:bg-gray-800 dark:ring-slate-700 sm:p-8">
+              <div className="mb-4 flex items-center gap-2">
+                <ClockIcon className="h-5 w-5 text-violet-500" />
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Business Hours</h2>
+              </div>
+              <div className="space-y-2 text-sm text-slate-500 dark:text-slate-400">
+                <p>Monday – Friday: 9:00 AM – 6:00 PM PST</p>
+                <p>Saturday: 10:00 AM – 4:00 PM PST</p>
                 <p>Sunday: Closed</p>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
+
+        <section className="mb-4 overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-50 via-sky-50 to-violet-100 p-6 dark:from-slate-800 dark:to-indigo-950 sm:p-10">
+          <div className="mb-8 max-w-2xl">
+            <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Let's Build Something Great Together</h2>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-300">
+              Whether you need help practicing interviews or want to share feedback, we're ready when you are.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {SUPPORT_CARDS.map((card) => (
+              <article key={card.title} className="rounded-2xl bg-white p-5 shadow-sm dark:bg-slate-800">
+                <div className={`mb-3 flex h-11 w-11 items-center justify-center rounded-xl ${card.wrap}`}>
+                  <card.icon className="h-5 w-5" />
+                </div>
+                <h3 className="font-bold text-slate-900 dark:text-white">{card.title}</h3>
+                <p className="mt-1 text-sm text-slate-500">{card.text}</p>
+              </article>
+            ))}
+          </div>
+        </section>
       </div>
     </div>
   );

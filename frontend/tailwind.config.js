@@ -1,5 +1,9 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  // Use :is() (not Tailwind's selector/:where) so dark: utilities beat light colors.
+  darkMode: ['variant', [
+    '&:is(html.dark, html[data-theme="dark"], html.dark *, html[data-theme="dark"] *)',
+  ]],
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",

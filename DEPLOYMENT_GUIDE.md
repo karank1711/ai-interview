@@ -95,7 +95,7 @@ npm run build
 
 ### Security Configuration
 - [ ] Change default passwords in `.env`
-- [ ] Update JWT secret with strong value
+- [ ] Keep the Supabase secret key on the server only
 - [ ] Configure proper SSL certificates
 - [ ] Set up firewall rules
 - [ ] Enable HTTPS only
@@ -159,7 +159,8 @@ DB_PASSWORD=your_secure_password
 DB_USER=interviewiq_user
 
 # Security
-JWT_SECRET=your_super_secret_jwt_key_change_this
+SUPABASE_URL=https://your-project-ref.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=sb_secret_your_secret_key
 
 # Email
 MAIL_USERNAME=your-email@domain.com

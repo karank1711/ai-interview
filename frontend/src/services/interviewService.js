@@ -1,5 +1,7 @@
 import api from './authService';
 
+let geminiTokenCache = { at: 0, data: null };
+
 export const interviewService = {
   // Start a new interview
   startInterview: async (interviewData) => {
@@ -43,6 +45,11 @@ export const interviewService = {
     }
   },
 
+  getInterviewStats: async () => {
+    const response = await api.get('/interviews/stats');
+    return response.data;
+  },
+
   // Update interview status
   updateInterviewStatus: async (interviewId, status) => {
     try {
@@ -65,7 +72,28 @@ export const interviewService = {
     }
   },
 
-  // Get questions for interview
+  getGeminiToken: async ({ force = false } = {}) => {
+    const fresh = Date.now() - geminiTokenCache.at < 45000;
+    if (!force && fresh && geminiTokenCache.data) return geminiTokenCache.data;
+    const response = await api.post('/interviews/gemini-token');
+    geminiTokenCache = { at: Date.now(), data: response.data };
+    return response.data;
+  },
+
+  evaluateSpokenAnswer: async (interviewId, payload, config = {}) => {
+    const response = await api.post(`/interviews/${interviewId}/evaluate-spoken`, payload, {
+      timeout: 180000,
+      ...config,
+    });
+    return response.data;
+  },
+
+  generateNextQuestion: async (interviewId, payload = {}) => {
+    const response = await api.post(`/interviews/${interviewId}/next-question`, payload, {
+      timeout: 60000,
+    });
+    return response.data;
+  },
   getQuestions: async ({ interviewId, course, category, level, type, count = 5 }) => {
     try {
       const response = await api.get('/questions/generate', {
@@ -88,13 +116,18 @@ export const interviewService = {
   },
 
   // Complete interview
-  completeInterview: async (interviewId) => {
+  completeInterview: async (interviewId, payload = {}) => {
     try {
-      const response = await api.post(`/interviews/${interviewId}/complete`);
+      const response = await api.post(`/interviews/${interviewId}/complete`, payload);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
     }
+  },
+
+  analyzeAnswerCompleteness: async (interviewId, payload) => {
+    const response = await api.post(`/interviews/${interviewId}/analyze-completeness`, payload);
+    return response.data;
   },
 
   // Get interview results

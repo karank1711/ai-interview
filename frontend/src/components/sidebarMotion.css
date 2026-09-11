@@ -1,0 +1,157 @@
+.brain-glow {
+  animation: brain-pulse 4.2s ease-in-out infinite;
+}
+
+.brain-neural-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  -webkit-mask-image: var(--brain-mask);
+  mask-image: var(--brain-mask);
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-source-type: luminance;
+  mask-mode: luminance;
+}
+
+.brain-signal-glow,
+.brain-electron {
+  offset-rotate: 0deg;
+  animation: brain-electron-travel var(--path-duration, 4.2s) linear infinite;
+  animation-delay: var(--path-delay, 0s);
+}
+
+.brain-electron-halo {
+  fill: #bae6fd;
+}
+
+.brain-electron-core {
+  fill: #f8fbff;
+}
+
+.brain-neural-layer.is-paused .brain-signal-glow,
+.brain-neural-layer.is-paused .brain-electron {
+  animation-play-state: paused;
+}
+
+@keyframes brain-pulse {
+  0%, 100% { filter: drop-shadow(0 0 5px rgba(56, 189, 248, 0.35)); }
+  50% { filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.7)); }
+}
+
+@keyframes brain-electron-travel {
+  0% { offset-distance: 0%; opacity: 0; }
+  10% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { offset-distance: 100%; opacity: 0; }
+}
+
+.rocket-float {
+  animation: rocket-hover 3.8s ease-in-out infinite;
+}
+
+.rocket-launch {
+  animation: rocket-hover 3.6s ease-in-out infinite;
+}
+
+.rocket-flame {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  z-index: 15;
+  width: 5px;
+  height: 16px;
+  transform: translateX(-50%);
+  border-radius: 40% 40% 60% 60%;
+  background: linear-gradient(180deg, #fff7ed 0%, #fbbf24 38%, #ea580c 100%);
+  filter: blur(0.55px);
+  animation: rocket-flame-flicker 0.22s ease-in-out infinite alternate;
+}
+
+.rocket-flame--left {
+  margin-left: -5px;
+  height: 12px;
+  width: 4px;
+  animation-delay: 0.05s;
+}
+
+.rocket-flame--center {
+  height: 18px;
+  width: 6px;
+}
+
+.rocket-flame--right {
+  margin-left: 5px;
+  height: 12px;
+  width: 4px;
+  animation-delay: 0.09s;
+}
+
+.rocket-smoke {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 52%;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.rocket-smoke-puff {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  border-radius: 50%;
+  filter: blur(6px);
+  animation: rocket-smoke-billow var(--life, 1.8s) ease-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+.rocket-smoke-puff.is-light {
+  background: radial-gradient(circle, rgba(51, 65, 85, 0.5) 0%, rgba(15, 23, 42, 0.18) 48%, transparent 72%);
+}
+
+.rocket-smoke-puff.is-dark {
+  background: radial-gradient(circle, rgba(248, 250, 252, 0.5) 0%, rgba(226, 232, 240, 0.16) 48%, transparent 72%);
+}
+
+@keyframes rocket-hover {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes rocket-flame-flicker {
+  0% { opacity: 0.7; transform: translateX(-50%) scaleY(0.88) scaleX(0.92); }
+  100% { opacity: 1; transform: translateX(-50%) scaleY(1.12) scaleX(1.05); }
+}
+
+@keyframes rocket-smoke-billow {
+  0% {
+    transform: translate(-50%, 0) scale(0.28);
+    opacity: 0;
+  }
+  12% { opacity: 0.62; }
+  55% { opacity: 0.38; }
+  100% {
+    transform: translate(calc(-50% + var(--drift, 0px)), 42px) scale(2.15);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brain-glow,
+  .brain-signal-glow,
+  .brain-electron,
+  .rocket-float,
+  .rocket-launch,
+  .rocket-flame,
+  .rocket-smoke-puff {
+    animation: none !important;
+  }
+}

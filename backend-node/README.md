@@ -13,14 +13,10 @@ npm run dev
 
 ## 2) Required environment variables
 
-- `MONGODB_URI` - your MongoDB connection string
-- `JWT_SECRET` - long random secret
+- `SUPABASE_URL` - Supabase project URL
+- `SUPABASE_SERVICE_ROLE_KEY` - Supabase secret key (`sb_secret_...`), server-side only
 
-Optional Firebase Admin sync (for storing users in Firebase Auth):
-
-- `FIREBASE_PROJECT_ID`
-- `FIREBASE_CLIENT_EMAIL`
-- `FIREBASE_PRIVATE_KEY`
+Apply `supabase/schema.sql` in the Supabase SQL Editor before starting the API.
 
 ## 3) Frontend config
 
@@ -28,13 +24,14 @@ Create `frontend/.env`:
 
 ```bash
 VITE_API_URL=http://localhost:8081/api
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+VITE_SUPABASE_ANON_KEY=sb_publishable_your_publishable_key
 ```
 
 ## 4) Implemented endpoint groups
 
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `POST /api/auth/refresh`
+- `GET /api/auth/me`
+- `PUT /api/auth/profile`
 - `POST /api/auth/forgot-password` (placeholder)
 - `POST /api/auth/reset-password` (placeholder)
 - `POST /api/auth/verify-email` (placeholder)

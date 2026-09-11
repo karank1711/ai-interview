@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { EyeIcon, EyeSlashIcon, CheckCircleIcon } from '@heroicons/react/24/outline';
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { authService } from '../services/authService';
+import OAuthButtons from '../components/OAuthButtons';
+import { usePopup } from '../components/AppPopup';
 
 const Signup = ({ setUser }) => {
   const [formData, setFormData] = useState({
@@ -16,8 +18,20 @@ const Signup = ({ setUser }) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const [verificationStep, setVerificationStep] = useState(false);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [pendingUserId, setPendingUserId] = useState('');
+  const [resendIn, setResendIn] = useState(0);
   const navigate = useNavigate();
+  const { showPopup } = usePopup();
+
+  useEffect(() => {
+    if (resendIn <= 0) return undefined;
+    const timer = window.setInterval(() => {
+      setResendIn((value) => (value > 0 ? value - 1 : 0));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [resendIn]);
 
   const handleChange = (e) => {
     setFormData({
@@ -41,7 +55,7 @@ const Signup = ({ setUser }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+    if (loading) return;
     if (!validateForm()) return;
     
     setLoading(true);
@@ -54,21 +68,19 @@ const Signup = ({ setUser }) => {
         password: formData.password,
         phoneNumber: formData.phoneNumber,
       });
-      
-      setSuccess(true);
-      // Auto-login after successful registration
-      setTimeout(async () => {
-        try {
-          const loginResponse = await authService.login({
-            email: formData.email,
-            password: formData.password,
-          });
-          setUser(loginResponse.data.user);
-          navigate('/dashboard');
-        } catch (loginError) {
-          navigate('/login');
+
+      if (response.needsEmailVerification) {
+        setPendingUserId(response.data?.user?.id || '');
+        setVerificationStep(true);
+        setResendIn(60);
+        if (response.sendWarning) {
+          setError(response.sendWarning);
         }
-      }, 2000);
+        return;
+      }
+
+      setUser(response.data.user);
+      navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {
@@ -76,50 +88,143 @@ const Signup = ({ setUser }) => {
     }
   };
 
-  const handleGoogleSignup = () => {
-    // For now, show a message that Google signup is coming soon
-    // In a real implementation, this would integrate with Google OAuth
-    setError('Google signup coming soon! Please use email registration for now.');
+  const handleVerifyCode = async (e) => {
+    e.preventDefault();
+    if (loading) return;
+    setLoading(true);
+    setError('');
+    try {
+      await authService.verifyEmailCode(formData.email, verificationCode, pendingUserId);
+      const response = await authService.login({
+        email: formData.email,
+        password: formData.password,
+      });
+      setUser(response.data.user);
+      showPopup({
+        type: 'success',
+        title: 'Email verified',
+        message: 'Your account is active. Redirecting you to the dashboard.',
+      });
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.message || 'Wrong verification code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleLinkedInSignup = () => {
-    // For now, show a message that LinkedIn signup is coming soon
-    // In a real implementation, this would integrate with LinkedIn OAuth
-    setError('LinkedIn signup coming soon! Please use email registration for now.');
+  const handleResendCode = async () => {
+    if (resendIn > 0 || loading) return;
+    setLoading(true);
+    setError('');
+    try {
+      await authService.resendVerificationCode(formData.email, pendingUserId);
+      setResendIn(60);
+      setVerificationCode('');
+    } catch (err) {
+      setError(err.message || 'Could not resend the verification code.');
+      if (err.retryAfterSec) {
+        setResendIn(err.retryAfterSec);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (success) {
+  const handleGoogleSignup = async () => {
+    if (loading) return;
+    setError('');
+    setLoading(true);
+    try {
+      await authService.signInWithGoogle();
+    } catch (err) {
+      setError(err.message || 'Google signup failed. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  const handleGitHubSignup = async () => {
+    if (loading) return;
+    setError('');
+    setLoading(true);
+    try {
+      await authService.signInWithGitHub();
+    } catch (err) {
+      setError(err.message || 'GitHub signup failed. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  if (verificationStep) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-12 px-4 sm:px-6 lg:px-8">
         <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="max-w-md w-full text-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          className="max-w-md w-full space-y-8"
         >
-          <div className="glassmorphism rounded-2xl p-8 shadow-xl">
-            <motion.div
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ duration: 0.5, repeat: Infinity }}
-              className="mx-auto w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mb-4"
-            >
-              <CheckCircleIcon className="w-8 h-8 text-white" />
-            </motion.div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              Registration Successful!
-            </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Your account has been created successfully. Redirecting to dashboard...
-            </p>
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-              <motion.div
-                className="bg-green-500 h-2 rounded-full"
-                initial={{ width: 0 }}
-                animate={{ width: '100%' }}
-                transition={{ duration: 2 }}
-              />
+          <div className="text-center">
+            <div className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mb-4">
+              <span className="text-white font-bold text-2xl">IQ</span>
             </div>
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
+              Verify your email
+            </h2>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+              Enter the 6-digit code sent to {formData.email}
+            </p>
           </div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="glassmorphism rounded-2xl p-8 shadow-xl"
+          >
+            <form className="space-y-6" onSubmit={handleVerifyCode}>
+              {error && (
+                <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                  <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+                </div>
+              )}
+              <div>
+                <label htmlFor="verificationCode" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Verification code
+                </label>
+                <input
+                  id="verificationCode"
+                  name="verificationCode"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  required
+                  value={verificationCode}
+                  onChange={(e) => {
+                    setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6));
+                    setError('');
+                  }}
+                  className="w-full px-3 py-2 tracking-[0.4em] text-center text-lg border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="000000"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading || verificationCode.length !== 6}
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Verifying...' : 'Verify email'}
+              </button>
+              <button
+                type="button"
+                onClick={handleResendCode}
+                disabled={loading || resendIn > 0}
+                className="w-full text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 disabled:opacity-50"
+              >
+                {resendIn > 0 ? `Resend code in ${resendIn}s` : 'Resend code'}
+              </button>
+            </form>
+          </motion.div>
         </motion.div>
       </div>
     );
@@ -335,31 +440,11 @@ const Signup = ({ setUser }) => {
               </div>
             </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={handleGoogleSignup}
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                <span className="sr-only">Sign up with Google</span>
-                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.267-6.053 2.267-4.827 0-8.44-3.84-8.44-8.667s3.613-8.667 8.44-8.667c2.4 0 4.133 1.067 5.467 2.213l2.4-2.4C18.133 1.333 15.733 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.133H12.48z"/>
-                </svg>
-                <span className="ml-2">Google</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleLinkedInSignup}
-                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                <span className="sr-only">Sign up with LinkedIn</span>
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-                </svg>
-                <span className="ml-2">LinkedIn</span>
-              </button>
-            </div>
+            <OAuthButtons
+              onGoogle={handleGoogleSignup}
+              onGitHub={handleGitHubSignup}
+              loading={loading}
+            />
           </div>
         </motion.div>
       </motion.div>

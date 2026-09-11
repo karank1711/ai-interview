@@ -1,116 +1,165 @@
 import { Router } from "express";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { UserProfile } from "../models/UserProfile.js";
-import { signAccessToken, signRefreshToken } from "../utils/tokens.js";
-import { env } from "../config/env.js";
-import { createFirebaseUser, verifyFirebasePassword } from "../config/firebase.js";
+import { requireAuth } from "../middleware/auth.js";
+import { getSupabaseAdmin, toRequestUser } from "../config/supabase.js";
+import { issueVerificationCode, verifyEmailCode } from "../services/emailVerification.js";
 
 const router = Router();
 
-function authPayload(user) {
-  const accessToken = signAccessToken(user._id.toString());
-  const refreshToken = signRefreshToken(user._id.toString());
+function publicProfile(user) {
   return {
-    accessToken,
-    refreshToken,
-    user: {
-      id: user._id,
-      name: user.name,
-      email: user.email
-    }
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    phoneNumber: user.phoneNumber || "",
+    avatarUrl: user.avatarUrl || "",
+    createdAt: user.createdAt || "",
+    emailVerified: user.emailVerified !== false
   };
 }
 
-router.post("/register", async (req, res) => {
+function handleVerificationError(res, error) {
+  const status = error.statusCode || 500;
+  if (status >= 500) {
+    console.error("Email verification error:", error.message);
+  }
+  const payload = {
+    success: false,
+    code: error.code || "VERIFICATION_FAILED",
+    message: error.message || "Could not verify email. Please try again."
+  };
+  if (error.retryAfterSec) {
+    payload.retryAfterSec = error.retryAfterSec;
+  }
+  return res.status(status).json(payload);
+}
+
+router.get("/me", requireAuth, async (req, res) => {
+  return res.json({
+    success: true,
+    data: { user: publicProfile(req.user) }
+  });
+});
+
+router.put("/profile", requireAuth, async (req, res) => {
   try {
-    const { name, email, password } = req.body;
-    if (!name || !email || !password) {
-      return res.status(400).json({ success: false, message: "name, email and password are required" });
+    const name = typeof req.body.name === "string" ? req.body.name.trim() : "";
+    const phoneNumber =
+      typeof req.body.phoneNumber === "string" ? req.body.phoneNumber.trim() : "";
+    const avatarUrl =
+      typeof req.body.avatarUrl === "string" ? req.body.avatarUrl.trim() : undefined;
+
+    if (!name) {
+      return res.status(400).json({ success: false, message: "Name is required" });
+    }
+    if (avatarUrl && avatarUrl.length > 400000) {
+      return res.status(400).json({ success: false, message: "Profile photo is too large. Use a smaller JPG or PNG." });
     }
 
-    const firebaseUid = await createFirebaseUser({
-      email: email.toLowerCase(),
-      password,
-      displayName: name
-    });
-
-    const passwordHash = await bcrypt.hash(password, 10);
-    const normalizedEmail = email.toLowerCase();
-    let user = await UserProfile.findOne({ email: normalizedEmail });
-    if (user) {
-      return res.status(409).json({ success: false, message: "Email already exists" });
-    }
-
-    user = await UserProfile.create({
+    const supabase = getSupabaseAdmin();
+    const patch = {
       name,
-      email: normalizedEmail,
-      passwordHash,
-      firebaseUid
+      phone_number: phoneNumber || null
+    };
+    if (avatarUrl !== undefined) {
+      patch.avatar_url = avatarUrl || null;
+    }
+
+    let { data, error } = await supabase
+      .from("profiles")
+      .update(patch)
+      .eq("id", req.user.id)
+      .select("id, name, email, phone_number, email_verified, created_at, avatar_url")
+      .single();
+
+    if (error && (String(error.message || "").includes("avatar_url") || error.code === "42703")) {
+      delete patch.avatar_url;
+      const retry = await supabase
+        .from("profiles")
+        .update(patch)
+        .eq("id", req.user.id)
+        .select("id, name, email, phone_number, email_verified, created_at")
+        .single();
+      data = retry.data ? { ...retry.data, avatar_url: avatarUrl || null } : retry.data;
+      error = retry.error;
+    }
+
+    if (error || !data) {
+      return res.status(500).json({ success: false, message: "Could not update profile" });
+    }
+
+    return res.json({
+      success: true,
+      message: "Profile updated",
+      data: publicProfile(toRequestUser(data, { id: req.user.id, email: data.email, user_metadata: { avatar_url: data.avatar_url } }))
     });
-
-    return res.status(201).json({ success: true, message: "Registered", data: authPayload(user) });
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    console.error("Profile update error:", error.message);
+    return res.status(500).json({ success: false, message: "Could not update profile" });
   }
 });
 
-router.post("/login", async (req, res) => {
+router.post("/send-verification", async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const normalizedEmail = email?.toLowerCase();
-    const firebaseAuth = await verifyFirebasePassword(normalizedEmail, password || "");
-    if (!firebaseAuth.ok) {
-      return res.status(401).json({ success: false, message: "Invalid credentials" });
-    }
-
-    let user = await UserProfile.findOne({ email: normalizedEmail });
-    if (!user) {
-      const passwordHash = await bcrypt.hash(password || "", 10);
-      user = await UserProfile.create({
-        name: normalizedEmail.split("@")[0],
-        email: normalizedEmail,
-        passwordHash,
-        firebaseUid: firebaseAuth.uid
-      });
-    } else if (!user.firebaseUid && firebaseAuth.uid) {
-      user.firebaseUid = firebaseAuth.uid;
-      await user.save();
-    }
-
-    user.passwordHash = await bcrypt.hash(password || "", 10);
-    await user.save();
-
-    return res.json({ success: true, message: "Login success", data: authPayload(user) });
+    await issueVerificationCode({
+      email: req.body.email,
+      userId: req.body.userId
+    });
+    return res.json({
+      success: true,
+      message: "If that email can be verified, a code has been sent."
+    });
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    return handleVerificationError(res, error);
   }
-});
-
-router.post("/refresh", async (req, res) => {
-  try {
-    const { refreshToken } = req.body;
-    const payload = jwt.verify(refreshToken, env.jwtSecret);
-    if (payload.type !== "refresh") {
-      return res.status(401).json({ success: false, message: "Invalid refresh token" });
-    }
-    const accessToken = signAccessToken(payload.sub);
-    return res.json({ success: true, data: { accessToken } });
-  } catch (error) {
-    return res.status(401).json({ success: false, message: "Invalid refresh token" });
-  }
-});
-
-router.post("/forgot-password", async (req, res) => {
-  return res.json({ success: true, message: "Endpoint ready. Wire email provider when needed." });
-});
-
-router.post("/reset-password", async (req, res) => {
-  return res.json({ success: true, message: "Endpoint ready. Wire token verification when needed." });
 });
 
 router.post("/verify-email", async (req, res) => {
-  return res.json({ success: true, message: "Endpoint ready. Wire verification logic when needed." });
+  try {
+    await verifyEmailCode({
+      email: req.body.email,
+      code: req.body.code,
+      userId: req.body.userId
+    });
+    return res.json({
+      success: true,
+      message: "Email verified. You can now sign in."
+    });
+  } catch (error) {
+    return handleVerificationError(res, error);
+  }
+});
+
+router.post("/confirm-email", async (req, res) => {
+  return res.status(403).json({
+    success: false,
+    message: "Enter the verification code sent to your email to activate your account."
+  });
+});
+
+router.post("/forgot-password", async (req, res) => {
+  return res.json({
+    success: true,
+    message: "If an account exists for that email, a reset link will be sent."
+  });
+});
+
+router.post("/reset-password", async (req, res) => {
+  return res.json({ success: true, message: "Use the password reset link from your email." });
+});
+
+router.delete("/account", requireAuth, async (req, res) => {
+  try {
+    const supabase = getSupabaseAdmin();
+    const { error } = await supabase.auth.admin.deleteUser(req.user.id);
+    if (error) {
+      console.error("Account delete error:", error.message);
+      return res.status(500).json({ success: false, message: "Could not delete your account." });
+    }
+    return res.json({ success: true, message: "Account deleted" });
+  } catch (error) {
+    console.error("Account delete error:", error.message);
+    return res.status(500).json({ success: false, message: "Could not delete your account." });
+  }
 });
 
 export default router;

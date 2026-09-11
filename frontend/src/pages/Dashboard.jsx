@@ -4,28 +4,41 @@ import { motion } from 'framer-motion';
 import {
   PlayIcon,
   ChartBarIcon,
-  ClockIcon,
   UserGroupIcon,
-  AcademicCapIcon,
-  ArrowRightIcon,
   CalendarIcon,
-  CheckCircleIcon,
-  XCircleIcon,
+  ArrowRightIcon,
 } from '@heroicons/react/24/outline';
+import HeroSlideshow from '../components/HeroSlideshow';
+import AnimatedText from '../components/AnimatedText';
+import InterviewStatTokens from '../components/InterviewStatTokens';
+import ProgressViewAllLink from '../components/ProgressViewAllLink';
+import SelectDropdown from '../components/SelectDropdown';
 import { interviewService } from '../services/interviewService';
+import { readPageCache, writePageCache } from '../utils/pageDataCache';
+import { perfLog } from '../utils/perf';
+import { EMPTY_INTERVIEW_STATS, normalizeInterviewStats } from '../utils/interviewStats';
+
+const DASHBOARD_CACHE_KEY = 'dashboard:v2';
+
+function buildDashboardState(interviewList, resultList, stats) {
+  return {
+    interviews: interviewList,
+    results: resultList,
+    stats: normalizeInterviewStats(stats),
+  };
+}
 
 const Dashboard = ({ user }) => {
-  const [interviews, setInterviews] = useState([]);
-  const [stats, setStats] = useState({
-    totalInterviews: 0,
-    completedInterviews: 0,
-    averageScore: 0,
-    passRate: 0,
-  });
-  const [loading, setLoading] = useState(true);
+  const cached = readPageCache(DASHBOARD_CACHE_KEY);
+  const [interviews, setInterviews] = useState(cached?.interviews || []);
+  const [results, setResults] = useState(cached?.results || []);
+  const [stats, setStats] = useState(cached?.stats || EMPTY_INTERVIEW_STATS);
+  const [loading, setLoading] = useState(!cached);
   const [selectedCourse, setSelectedCourse] = useState('');
   const [selectedLevel, setSelectedLevel] = useState('');
   const [selectedType, setSelectedType] = useState('');
+  const [heroSlideIndex, setHeroSlideIndex] = useState(0);
+  const [startingInterview, setStartingInterview] = useState(false);
   const navigate = useNavigate();
 
   const courses = [
@@ -47,46 +60,46 @@ const Dashboard = ({ user }) => {
   ];
 
   useEffect(() => {
+    let cancelled = false;
     fetchDashboardData();
-  }, []);
 
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      const [interviewResponse, resultResponse] = await Promise.all([
-        interviewService.getUserInterviews(0, 20),
-        interviewService.getResultsHistory(0, 50),
-      ]);
-      const interviewList = interviewResponse.data || [];
-      const resultList = resultResponse.data || [];
-      setInterviews(interviewList.slice(0, 5));
-
-      const completedCount = interviewList.filter((item) => item.status === 'COMPLETED').length;
-      const avgScore = resultList.length
-        ? Math.round(resultList.reduce((sum, item) => sum + (item.overallScore || 0), 0) / resultList.length)
-        : 0;
-      const passCount = resultList.filter((item) => item.passFail).length;
-      const passRate = resultList.length ? Math.round((passCount / resultList.length) * 100) : 0;
-
-      setStats({
-        totalInterviews: interviewList.length,
-        completedInterviews: completedCount,
-        averageScore: avgScore,
-        passRate,
-      });
-    } catch (error) {
-      console.error('Failed to fetch dashboard data:', error);
-    } finally {
-      setLoading(false);
+    async function fetchDashboardData() {
+      const started = performance.now();
+      try {
+        if (!readPageCache(DASHBOARD_CACHE_KEY)) setLoading(true);
+        const [interviewResponse, resultResponse, statsResponse] = await Promise.all([
+          interviewService.getUserInterviews(0, 20),
+          interviewService.getResultsHistory(0, 50),
+          interviewService.getInterviewStats(),
+        ]);
+        if (cancelled) return;
+        const interviewList = interviewResponse.data || [];
+        const resultList = resultResponse.data || [];
+        const next = buildDashboardState(interviewList, resultList, statsResponse.data);
+        writePageCache(DASHBOARD_CACHE_KEY, next);
+        setInterviews(next.interviews);
+        setResults(next.results);
+        setStats(next.stats);
+        perfLog('dashboard-data', `${Math.round(performance.now() - started)}ms`);
+      } catch (error) {
+        console.error('Failed to fetch dashboard data:', error);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
-  };
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleStartInterview = async () => {
     if (!selectedCourse || !selectedLevel || !selectedType) {
       alert('Please select all interview parameters');
       return;
     }
-
+    if (startingInterview) return;
+    setStartingInterview(true);
     try {
       const response = await interviewService.startInterview({
         category: selectedCourse,
@@ -95,40 +108,13 @@ const Dashboard = ({ user }) => {
         type: selectedType,
         durationMinutes: 30,
       });
-      
       navigate(`/interview/${response.data._id || response.data.id}`);
     } catch (error) {
       console.error('Failed to start interview:', error);
       alert('Failed to start interview. Please try again.');
+      setStartingInterview(false);
     }
   };
-
-  const statCards = [
-    {
-      title: 'Total Interviews',
-      value: stats.totalInterviews,
-      icon: CalendarIcon,
-      color: 'from-blue-500 to-blue-600',
-    },
-    {
-      title: 'Completed',
-      value: stats.completedInterviews,
-      icon: CheckCircleIcon,
-      color: 'from-green-500 to-green-600',
-    },
-    {
-      title: 'Average Score',
-      value: `${stats.averageScore}%`,
-      icon: ChartBarIcon,
-      color: 'from-purple-500 to-purple-600',
-    },
-    {
-      title: 'Pass Rate',
-      value: `${stats.passRate}%`,
-      icon: UserGroupIcon,
-      color: 'from-orange-500 to-orange-600',
-    },
-  ];
 
   if (loading) {
     return (
@@ -143,59 +129,52 @@ const Dashboard = ({ user }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#070b16] py-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Welcome Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="mb-8"
+          className="relative isolate mb-8 min-h-[280px] overflow-hidden rounded-3xl shadow-xl md:min-h-[320px]"
         >
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Welcome back, {user.name}! 
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Ready to practice your interview skills?
-          </p>
+          <HeroSlideshow showControls onIndexChange={setHeroSlideIndex} />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-950/50 to-slate-900/20" />
+          <div className="relative z-10 flex h-full min-h-[280px] max-w-2xl flex-col justify-center p-8 md:min-h-[320px] md:p-12">
+            <p className="mb-3 inline-flex w-fit items-center rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
+              AI-Powered Interview Platform
+            </p>
+            <AnimatedText
+              as="h1"
+              key={heroSlideIndex}
+              replayKey={heroSlideIndex}
+              className="text-3xl font-bold text-white md:text-4xl"
+              text={`Welcome back, ${user?.name || 'there'}!`}
+            />
+            <p className="mt-3 max-w-xl text-white/85">
+              Ready to practice your interview skills?
+            </p>
+            <button
+              type="button"
+              onClick={() => document.getElementById('start-interview')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+              className="mt-6 inline-flex w-fit items-center rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-3 font-medium text-white transition-all hover:from-blue-600 hover:to-purple-700"
+            >
+              Start Interview
+              <ArrowRightIcon className="ml-2 h-5 w-5" />
+            </button>
+          </div>
         </motion.div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {statCards.map((stat, index) => (
-            <motion.div
-              key={stat.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: index * 0.1 }}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    {stat.title}
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                    {stat.value}
-                  </p>
-                </div>
-                <div className={`w-12 h-12 bg-gradient-to-r ${stat.color} rounded-lg flex items-center justify-center`}>
-                  <stat.icon className="w-6 h-6 text-white" />
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+        <InterviewStatTokens stats={stats} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 gap-8">
           {/* Start Interview Section */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.3 }}
-            className="lg:col-span-2"
           >
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+            <div id="start-interview" className="bg-white dark:bg-gray-800 rounded-2xl shadow-md ring-1 ring-gray-100 dark:ring-gray-700 p-6">
               <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
                 Start New Interview
               </h2>
@@ -205,138 +184,49 @@ const Dashboard = ({ user }) => {
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Course
                   </label>
-                  <select
+                  <SelectDropdown
+                    aria-label="Course"
                     value={selectedCourse}
-                    onChange={(e) => setSelectedCourse(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select a course</option>
-                    {courses.map((course) => (
-                      <option key={course.value} value={course.value}>
-                        {course.label}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setSelectedCourse}
+                    placeholder="Select a course"
+                    options={courses}
+                  />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Experience Level
                   </label>
-                  <select
+                  <SelectDropdown
+                    aria-label="Experience Level"
                     value={selectedLevel}
-                    onChange={(e) => setSelectedLevel(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select your level</option>
-                    {levels.map((level) => (
-                      <option key={level.value} value={level.value}>
-                        {level.label}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setSelectedLevel}
+                    placeholder="Select your level"
+                    options={levels}
+                  />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Interview Type
                   </label>
-                  <select
+                  <SelectDropdown
+                    aria-label="Interview Type"
                     value={selectedType}
-                    onChange={(e) => setSelectedType(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select interview type</option>
-                    {types.map((type) => (
-                      <option key={type.value} value={type.value}>
-                        {type.label}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setSelectedType}
+                    placeholder="Select interview type"
+                    options={types}
+                  />
                 </div>
 
                 <button
                   onClick={handleStartInterview}
+                  disabled={startingInterview}
                   className="w-full flex items-center justify-center px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all transform hover:scale-105"
                 >
                   <PlayIcon className="w-5 h-5 mr-2" />
                   Start Interview
                 </button>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Recent Interviews */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-          >
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                  Recent Interviews
-                </h2>
-                <Link
-                  to="/interview-history"
-                  className="text-blue-600 hover:text-blue-500 dark:text-blue-400 text-sm font-medium"
-                >
-                  View All
-                </Link>
-              </div>
-
-              <div className="space-y-4">
-                {interviews.length > 0 ? (
-                  interviews.map((interview) => (
-                    <div
-                      key={interview._id || interview.id}
-                      className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-900 dark:text-white">
-                          {(interview.course || interview.category || 'GENERAL')?.replace('_', ' ')}
-                        </span>
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          interview.status === 'COMPLETED'
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                            : interview.status === 'IN_PROGRESS'
-                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                            : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
-                        }`}>
-                          {interview.status?.replace('_', ' ')}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
-                        <span>{interview.level?.replace('_', ' ')}</span>
-                        <span>{new Date(interview.createdAt).toLocaleDateString()}</span>
-                      </div>
-
-                      {interview.status === 'COMPLETED' ? (
-                        <Link
-                          to={`/results/${interview._id || interview.id}`}
-                          className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 block text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400"
-                        >
-                          View Results
-                        </Link>
-                      ) : interview.status === 'IN_PROGRESS' ? (
-                        <Link
-                          to={`/interview/${interview._id || interview.id}`}
-                          className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700 block text-sm text-blue-600 hover:text-blue-500 dark:text-blue-400"
-                        >
-                          Continue Interview
-                        </Link>
-                      ) : null}
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8">
-                    <AcademicCapIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600 dark:text-gray-400">
-                      No interviews yet. Start your first interview!
-                    </p>
-                  </div>
-                )}
               </div>
             </div>
           </motion.div>
@@ -349,7 +239,7 @@ const Dashboard = ({ user }) => {
           transition={{ duration: 0.8, delay: 0.5 }}
           className="mt-8"
         >
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md ring-1 ring-gray-100 dark:ring-gray-700 p-6">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
               Quick Actions
             </h2>
@@ -389,12 +279,7 @@ const Dashboard = ({ user }) => {
               </Link>
             </div>
             <div className="mt-4">
-              <Link
-                to="/progress"
-                className="inline-flex items-center text-sm text-blue-600 dark:text-blue-400 hover:underline"
-              >
-                Open detailed progress tracking
-              </Link>
+              <ProgressViewAllLink />
             </div>
           </div>
         </motion.div>
