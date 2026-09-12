@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { authService } from '../services/authService';
 import OAuthButtons from '../components/OAuthButtons';
+import AuthSplitLayout from '../components/AuthSplitLayout';
 import { usePopup } from '../components/AppPopup';
 import { useSidebar } from '../context/SidebarContext';
 import { markWelcomeVoicePending } from '../utils/welcomeVoice';
@@ -168,30 +169,26 @@ const Signup = ({ setUser }) => {
 
   if (verificationStep) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8 px-3 sm:px-6 lg:px-8">
+      <AuthSplitLayout>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="w-full max-w-md min-w-0 space-y-8"
+          className="w-full min-w-0"
         >
-          <div className="text-center">
-            <div className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mb-4">
-              <span className="text-white font-bold text-2xl">IQ</span>
+          <div className="rounded-3xl bg-white p-5 shadow-xl ring-1 ring-slate-100 dark:bg-[#121a2e] dark:ring-white/10 sm:p-8">
+            <div className="mb-6 text-center">
+              <div className="mx-auto mb-4 flex h-12 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-purple-600">
+                <span className="text-xl font-bold text-white">IQ</span>
+              </div>
+              <h2 className="text-[clamp(1.5rem,6vw,1.875rem)] font-bold text-gray-900 dark:text-white">
+                Verify your email
+              </h2>
+              <p className="mt-2 break-words text-sm text-gray-600 dark:text-gray-400">
+                Enter the 6-digit code sent to {formData.email}
+              </p>
             </div>
-            <h2 className="text-[clamp(1.5rem,6vw,1.875rem)] font-bold text-gray-900 dark:text-white">
-              Verify your email
-            </h2>
-            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-              Enter the 6-digit code sent to {formData.email}
-            </p>
-          </div>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="glassmorphism rounded-2xl p-5 shadow-xl sm:p-8"
-          >
             <form className="space-y-6" onSubmit={handleVerifyCode}>
               {error && (
                 <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-3">
@@ -235,44 +232,39 @@ const Signup = ({ setUser }) => {
                 {resendIn > 0 ? `Resend code in ${resendIn}s` : 'Resend code'}
               </button>
             </form>
-          </motion.div>
+          </div>
         </motion.div>
-      </div>
+      </AuthSplitLayout>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8 px-3 sm:px-6 lg:px-8">
+    <AuthSplitLayout>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
-        className="w-full max-w-md min-w-0 space-y-8"
+        className="w-full min-w-0"
       >
-        <div className="text-center">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mb-4"
-          >
-            <span className="text-white font-bold text-2xl">IQ</span>
-          </motion.div>
-          <h2 className="text-[clamp(1.5rem,6vw,1.875rem)] font-bold text-gray-900 dark:text-white">
-            Create your account
-          </h2>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Join InterviewIQ and start practicing today
-          </p>
-        </div>
+        <div className="rounded-3xl bg-white p-5 shadow-xl ring-1 ring-slate-100 dark:bg-[#121a2e] dark:ring-white/10 sm:p-8">
+          <div className="mb-6 text-center">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="mx-auto mb-4 flex h-12 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-purple-600"
+            >
+              <span className="text-xl font-bold text-white">IQ</span>
+            </motion.div>
+            <h2 className="text-[clamp(1.5rem,6vw,1.875rem)] font-bold text-gray-900 dark:text-white">
+              Create your account
+            </h2>
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+              Join InterviewIQ and start practicing today
+            </p>
+          </div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="glassmorphism rounded-2xl p-5 shadow-xl sm:p-8"
-        >
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form className="space-y-5" onSubmit={handleSubmit}>
             {error && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
@@ -426,28 +418,15 @@ const Signup = ({ setUser }) => {
                 )}
               </button>
             </div>
-
-            <div className="text-center">
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                Already have an account?{' '}
-                <Link
-                  to="/login"
-                  className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
-                >
-                  Sign in
-                </Link>
-              </span>
-            </div>
           </form>
 
-          {/* Social Signup */}
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300 dark:border-gray-600" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="oauth-divider-label px-2 text-gray-500 dark:text-slate-200">Or sign up with</span>
+                <span className="oauth-divider-label bg-white px-2 text-gray-500 dark:bg-[#121a2e] dark:text-slate-200">Or sign up with</span>
               </div>
             </div>
 
@@ -457,9 +436,19 @@ const Signup = ({ setUser }) => {
               loading={loading}
             />
           </div>
-        </motion.div>
+
+          <p className="mt-5 text-center text-sm text-gray-600 dark:text-gray-400">
+            Already have an account?{' '}
+            <Link
+              to="/login"
+              className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+            >
+              Sign in
+            </Link>
+          </p>
+        </div>
       </motion.div>
-    </div>
+    </AuthSplitLayout>
   );
 };
 

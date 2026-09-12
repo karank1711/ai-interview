@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { EyeIcon, EyeSlashIcon, EnvelopeIcon, LockClosedIcon } from '@heroicons/react/24/outline';
 import { authService } from '../services/authService';
 import OAuthButtons from '../components/OAuthButtons';
+import AuthSplitLayout from '../components/AuthSplitLayout';
 import { usePopup } from '../components/AppPopup';
 import { useSidebar } from '../context/SidebarContext';
 import { markWelcomeVoicePending } from '../utils/welcomeVoice';
@@ -82,69 +83,73 @@ const Login = ({ setUser }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8 px-3 sm:px-6 lg:px-8">
+    <AuthSplitLayout>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
-        className="w-full max-w-md min-w-0 space-y-8"
+        className="w-full min-w-0"
       >
-        <div className="text-center">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="mx-auto w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mb-4"
-          >
-            <span className="text-white font-bold text-2xl">IQ</span>
-          </motion.div>
-          <h2 className="break-words text-[clamp(1.35rem,5.5vw,1.875rem)] font-bold text-gray-900 dark:text-white">
-            Welcome back
-          </h2>
-          <p className="mt-2 break-words px-1 text-sm text-gray-600 dark:text-gray-400">
-            Sign in to your InterviewIQ account
-          </p>
-        </div>
-
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="glassmorphism rounded-2xl p-5 shadow-xl sm:p-8"
+          className="rounded-3xl bg-white p-5 shadow-xl ring-1 ring-slate-100 dark:bg-[#121a2e] dark:ring-white/10 sm:p-8"
         >
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <div className="mb-6 text-center">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="mx-auto mb-4 flex h-12 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-blue-500 to-purple-600"
+            >
+              <span className="text-xl font-bold text-white">IQ</span>
+            </motion.div>
+            <h2 className="break-words text-[clamp(1.35rem,5.5vw,1.75rem)] font-bold text-gray-900 dark:text-white">
+              Welcome back
+            </h2>
+            <p className="mt-2 break-words px-1 text-sm text-gray-600 dark:text-gray-400">
+              Sign in to your InterviewIQ account
+            </p>
+          </div>
+
+          <form className="space-y-5" onSubmit={handleSubmit}>
             {error && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-3"
+                className="rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-900/30"
               >
-                <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
               </motion.div>
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Email address
               </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter your email"
-              />
+              <div className="relative">
+                <EnvelopeIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-3 text-gray-900 placeholder-gray-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-400"
+                  placeholder="Enter your email"
+                />
+              </div>
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label htmlFor="password" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Password
               </label>
               <div className="relative">
+                <LockClosedIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
                   id="password"
                   name="password"
@@ -153,13 +158,13 @@ const Login = ({ setUser }) => {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full rounded-lg border border-gray-300 bg-white py-2.5 pl-10 pr-10 text-gray-900 placeholder-gray-500 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white dark:placeholder-gray-400"
                   placeholder="Enter your password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  className="absolute inset-y-0 right-0 flex items-center pr-3"
                 >
                   {showPassword ? (
                     <EyeSlashIcon className="h-5 w-5 text-gray-400" />
@@ -210,28 +215,15 @@ const Login = ({ setUser }) => {
                 )}
               </button>
             </div>
-
-            <div className="text-center">
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                Don&apos;t have an account?{' '}
-                <Link
-                  to="/signup"
-                  className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
-                >
-                  Sign up
-                </Link>
-              </span>
-            </div>
           </form>
 
-          {/* Social Login */}
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300 dark:border-gray-600" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="oauth-divider-label px-2 text-gray-500 dark:text-slate-200">Or continue with</span>
+                <span className="oauth-divider-label bg-white px-2 text-gray-500 dark:bg-[#121a2e] dark:text-slate-200">Or continue with</span>
               </div>
             </div>
 
@@ -241,9 +233,19 @@ const Login = ({ setUser }) => {
               loading={loading}
             />
           </div>
+
+          <p className="mt-5 text-center text-sm text-gray-600 dark:text-gray-400">
+            Don&apos;t have an account?{' '}
+            <Link
+              to="/signup"
+              className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+            >
+              Sign up
+            </Link>
+          </p>
         </motion.div>
       </motion.div>
-    </div>
+    </AuthSplitLayout>
   );
 };
 
