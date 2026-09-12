@@ -1505,24 +1505,24 @@ const InterviewRoom = ({ user }) => {
             </p>
           )}
 
-          <div className="mt-4 flex shrink-0 items-end justify-center gap-5 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:mt-3 sm:gap-8 sm:pb-2">
-            <button type="button" onClick={toggleAudio} className="flex min-w-[3.25rem] flex-col items-center text-[11px] text-slate-300 sm:text-xs">
+          <div className="mt-4 flex shrink-0 items-start justify-center gap-5 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:mt-3 sm:gap-8 sm:pb-2">
+            <button type="button" onClick={toggleAudio} className="flex w-[4.75rem] flex-col items-center text-[11px] text-slate-300 sm:text-xs">
               <span className={`flex h-11 w-11 items-center justify-center rounded-full sm:h-14 sm:w-14 ${isAudioEnabled ? 'bg-slate-700' : 'bg-red-600'}`}>
                 <MicrophoneIcon className="h-5 w-5 sm:h-6 sm:w-6" />
               </span>
-              Mute
+              <span className="mt-1 min-h-[2rem] text-center leading-tight">Mute</span>
             </button>
-            <button type="button" onClick={toggleVideo} className="flex min-w-[3.25rem] flex-col items-center text-[11px] text-slate-300 sm:text-xs">
+            <button type="button" onClick={toggleVideo} className="flex w-[4.75rem] flex-col items-center text-[11px] text-slate-300 sm:text-xs">
               <span className={`flex h-11 w-11 items-center justify-center rounded-full sm:h-14 sm:w-14 ${isVideoEnabled ? 'bg-slate-700' : 'bg-red-600'}`}>
                 <VideoCameraIcon className="h-5 w-5 sm:h-6 sm:w-6" />
               </span>
-              Camera
+              <span className="mt-1 min-h-[2rem] text-center leading-tight">Camera</span>
             </button>
-            <button type="button" onClick={requestEndInterview} className="flex min-w-[4.5rem] flex-col items-center text-[11px] text-slate-300 sm:text-xs">
-              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-red-600 shadow-lg shadow-red-900/40 sm:h-16 sm:w-16">
-                <PhoneXMarkIcon className="h-6 w-6 sm:h-7 sm:w-7" />
+            <button type="button" onClick={requestEndInterview} className="flex w-[4.75rem] flex-col items-center text-[11px] text-slate-300 sm:text-xs">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-red-600 shadow-lg shadow-red-900/40 sm:h-14 sm:w-14">
+                <PhoneXMarkIcon className="h-5 w-5 sm:h-6 sm:w-6" />
               </span>
-              <span className="max-w-[4.75rem] text-center leading-tight">End Interview</span>
+              <span className="mt-1 min-h-[2rem] text-center leading-tight">End Interview</span>
             </button>
           </div>
         </div>
