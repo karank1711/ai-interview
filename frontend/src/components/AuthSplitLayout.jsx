@@ -1,3 +1,4 @@
+import { useEffect, useId, useRef } from 'react';
 import { SparklesIcon, ChartBarIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import './heroRobot.css';
 
@@ -19,113 +20,143 @@ const FEATURES = [
   },
 ];
 
-function AuthSceneArt({ className = '' }) {
+function useNaturalRobotBlink(ref) {
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return undefined;
+
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (motionQuery.matches) return undefined;
+
+    let cancelled = false;
+    let waitTimer = 0;
+    let clearTimer = 0;
+
+    const schedule = () => {
+      const wait = 2600 + Math.random() * 3200;
+      waitTimer = window.setTimeout(() => {
+        if (cancelled || !ref.current) return;
+        const doubleBlink = Math.random() < 0.22;
+        const className = doubleBlink ? 'is-double-blinking' : 'is-blinking';
+        const duration = doubleBlink ? 520 : 280;
+        ref.current.classList.add(className);
+        clearTimer = window.setTimeout(() => {
+          ref.current?.classList.remove(className);
+          if (!cancelled) schedule();
+        }, duration);
+      }, wait);
+    };
+
+    schedule();
+    return () => {
+      cancelled = true;
+      window.clearTimeout(waitTimer);
+      window.clearTimeout(clearTimer);
+    };
+  }, [ref]);
+}
+
+function RobotEyes({ uid }) {
+  const eyesRef = useRef(null);
+  useNaturalRobotBlink(eyesRef);
+
   return (
-    <div className={`relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#dbeafe] via-[#e0e7ff] to-[#f5f3ff] shadow-[0_18px_40px_rgba(99,102,241,0.18)] ring-1 ring-sky-200/70 dark:from-[#1e3a8a] dark:via-[#312e81] dark:to-[#0b1224] dark:ring-white/10 dark:shadow-[0_20px_50px_rgba(15,23,42,0.35)] ${className}`}>
-      <div className="pointer-events-none absolute -left-8 top-2 h-36 w-40 rounded-full bg-white/80 blur-2xl dark:bg-sky-400/20" />
-      <div className="pointer-events-none absolute right-8 top-10 h-32 w-32 rounded-full bg-violet-200/50 blur-3xl dark:bg-violet-500/25" />
-      <svg viewBox="0 0 560 280" className="relative h-auto w-full" aria-hidden="true">
+    <g ref={eyesRef} className="auth-robot-eyes">
+      <ellipse cx="48" cy="64" rx="8" ry="9" fill={`url(#${uid}-eye)`} />
+      <ellipse cx="76" cy="64" rx="8" ry="9" fill={`url(#${uid}-eye)`} />
+      <circle cx="50" cy="61" r="2.2" fill="#fff" />
+      <circle cx="78" cy="61" r="2.2" fill="#fff" />
+    </g>
+  );
+}
+
+function AuthRobot({ uid, x = 132, y = 58 }) {
+  return (
+    <g transform={`translate(${x} ${y})`}>
+      <ellipse cx="62" cy="156" rx="44" ry="11" fill="var(--auth-glow)" />
+      <rect x="36" y="98" width="52" height="52" rx="20" fill={`url(#${uid}-robot)`} />
+      <circle cx="24" cy="116" r="10" fill="#f8fafc" />
+      <circle cx="100" cy="116" r="10" fill="#f8fafc" />
+      <circle cx="22" cy="116" r="6" fill="#818cf8" />
+      <circle cx="102" cy="116" r="6" fill="#818cf8" />
+      <rect x="28" y="36" width="68" height="72" rx="32" fill={`url(#${uid}-robot)`} />
+      <rect x="56" y="16" width="8" height="24" rx="4" fill="#e2e8f0" />
+      <circle cx="60" cy="14" r="8" fill="#38bdf8" />
+      <RobotEyes uid={uid} />
+      <path d="M50 82c8 10 20 10 28 0" fill="none" stroke="#64748b" strokeWidth="2.6" strokeLinecap="round" />
+    </g>
+  );
+}
+
+function AuthSceneArt({ className = '' }) {
+  const uid = useId().replace(/:/g, '');
+
+  return (
+    <div
+      className={`auth-scene relative overflow-hidden rounded-3xl shadow-[0_18px_40px_rgba(99,102,241,0.14)] ring-1 ring-sky-200/70 dark:ring-white/10 dark:shadow-[0_20px_50px_rgba(15,23,42,0.35)] ${className}`}
+    >
+      <svg viewBox="0 0 640 320" className="relative h-auto w-full" aria-hidden="true">
         <defs>
-          <linearGradient id="auth-room" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#dbeafe" />
-            <stop offset="48%" stopColor="#c7d2fe" />
-            <stop offset="100%" stopColor="#eef2ff" />
-          </linearGradient>
-          <linearGradient id="auth-desk" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#bfdbfe" />
-            <stop offset="100%" stopColor="#e0e7ff" />
-          </linearGradient>
-          <linearGradient id="auth-robot-body" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id={`${uid}-robot`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#ffffff" />
             <stop offset="100%" stopColor="#e0e7ff" />
           </linearGradient>
-          <linearGradient id="auth-screen" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#93c5fd" />
-            <stop offset="100%" stopColor="#6366f1" />
+          <linearGradient id={`${uid}-screen`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--auth-laptop)" />
+            <stop offset="100%" stopColor="var(--auth-laptop-deep)" />
           </linearGradient>
-          <linearGradient id="auth-card" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#7dd3fc" />
-            <stop offset="100%" stopColor="#818cf8" />
-          </linearGradient>
-          <radialGradient id="auth-eye-glow" cx="50%" cy="50%" r="50%">
+          <radialGradient id={`${uid}-eye`} cx="50%" cy="50%" r="50%">
             <stop offset="0%" stopColor="#e0f2fe" />
             <stop offset="55%" stopColor="#22d3ee" />
             <stop offset="100%" stopColor="#0284c7" />
           </radialGradient>
-          <filter id="auth-soft-glow" x="-30%" y="-30%" width="160%" height="160%">
-            <feGaussianBlur stdDeviation="3.5" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
         </defs>
 
-        <rect width="560" height="280" fill="url(#auth-room)" />
-        <ellipse cx="92" cy="96" rx="88" ry="64" fill="#ffffff" opacity="0.55" />
-        <ellipse cx="170" cy="188" rx="96" ry="36" fill="#38bdf8" opacity="0.16" />
-        <rect x="0" y="198" width="560" height="82" fill="url(#auth-desk)" />
-        <rect x="0" y="198" width="560" height="6" fill="#93c5fd" opacity="0.7" />
+        <ellipse cx="110" cy="88" rx="120" ry="78" fill="var(--auth-blob)" />
+        <ellipse cx="430" cy="54" rx="90" ry="48" fill="var(--auth-blob-2)" opacity="0.55" />
+        <ellipse cx="560" cy="210" rx="80" ry="50" fill="var(--auth-blob)" opacity="0.45" />
 
-        <g transform="translate(18 148)">
-          <ellipse cx="28" cy="62" rx="22" ry="8" fill="#86efac" opacity="0.45" />
-          <path d="M18 58c-10-30 8-54 22-60 12 8 24 34 14 60z" fill="#22c55e" />
-          <path d="M12 52c10-20 32-24 40-8-14 6-24 16-30 28z" fill="#86efac" />
-          <rect x="22" y="56" width="10" height="20" rx="3" fill="#a16207" />
+        <g fill="var(--auth-dots)">
+          {[0, 1, 2, 3].map((row) =>
+            [0, 1, 2, 3].map((col) => (
+              <circle key={`${row}-${col}`} cx={568 + col * 12} cy={28 + row * 12} r="2.2" />
+            )),
+          )}
         </g>
 
-        <g className="hero-float-a" transform="translate(36 48)">
-          <rect width="62" height="42" rx="14" fill="url(#auth-card)" opacity="0.92" filter="url(#auth-soft-glow)" />
-          <rect x="16" y="12" width="30" height="18" rx="6" fill="none" stroke="#fff" strokeWidth="2.2" />
-          <circle cx="31" cy="21" r="4" fill="none" stroke="#fff" strokeWidth="1.8" />
+        <rect x="0" y="238" width="640" height="82" fill="var(--auth-desk)" />
+        <rect x="0" y="238" width="640" height="8" fill="var(--auth-desk-edge)" />
+
+        <g transform="translate(28 176)">
+          <ellipse cx="28" cy="70" rx="22" ry="7" fill="var(--auth-plant-dark)" opacity="0.2" />
+          <path d="M28 62c-18-28-6-52 4-58 8 10 14 28 8 58z" fill="var(--auth-plant-dark)" />
+          <path d="M28 62c16-32 28-40 34-28-8 10-16 24-22 48z" fill="var(--auth-plant)" />
+          <path d="M28 62c-2-24 16-38 22-22-6 8-12 18-16 36z" fill="var(--auth-plant-dark)" />
+          <ellipse cx="28" cy="68" rx="16" ry="10" fill="var(--auth-pot)" />
+          <path d="M16 68h24l-3 16H19z" fill="var(--auth-pot)" />
         </g>
 
-        <g className="hero-float-b" transform="translate(248 22)">
-          <rect width="96" height="46" rx="16" fill="url(#auth-card)" opacity="0.95" filter="url(#auth-soft-glow)" />
-          <path d="M16 28c7-12 14-4 20-14 7 16 14 6 22 14 8-12 16-2 24-10" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" />
+        <g transform="translate(228 78)">
+          <rect width="118" height="52" rx="16" fill="var(--auth-chat)" />
+          <rect x="16" y="14" width="72" height="6" rx="3" fill="var(--auth-chat-line)" />
+          <rect x="16" y="26" width="86" height="6" rx="3" fill="var(--auth-chat-line)" opacity="0.75" />
+          <rect x="16" y="38" width="54" height="6" rx="3" fill="var(--auth-chat-line)" opacity="0.5" />
         </g>
 
-        <g className="hero-float-c" transform="translate(268 96)">
-          <rect width="78" height="68" rx="16" fill="url(#auth-card)" opacity="0.9" filter="url(#auth-soft-glow)" />
-          <circle cx="22" cy="22" r="9" fill="#fff" opacity="0.85" />
-          <rect x="36" y="16" width="28" height="5" rx="2.5" fill="#fff" opacity="0.9" />
-          <rect x="36" y="25" width="20" height="4" rx="2" fill="#fff" opacity="0.65" />
-          <rect x="14" y="40" width="50" height="5" rx="2.5" fill="#fff" opacity="0.55" />
-          <rect x="14" y="50" width="38" height="5" rx="2.5" fill="#fff" opacity="0.4" />
+        <AuthRobot uid={uid} x="96" y="42" />
+
+        <g transform="translate(236 168)">
+          <rect x="18" y="18" width="108" height="70" rx="8" fill="var(--auth-laptop-base)" />
+          <rect x="24" y="24" width="96" height="56" rx="4" fill={`url(#${uid}-screen)`} />
+          <rect x="8" y="86" width="128" height="10" rx="4" fill="var(--auth-laptop-base)" />
         </g>
 
-        <g transform="translate(128 118)">
-          <rect x="8" y="58" width="148" height="10" rx="4" fill="#64748b" opacity="0.28" />
-          <rect x="22" y="42" width="124" height="78" rx="10" fill="#1e3a8a" />
-          <rect x="28" y="48" width="112" height="58" rx="6" fill="url(#auth-screen)" />
-          <rect x="0" y="118" width="168" height="12" rx="5" fill="#94a3b8" />
-        </g>
-
-        <g className="hero-robot-bob" transform="translate(132 58)">
-          <ellipse cx="62" cy="148" rx="46" ry="10" fill="#38bdf8" opacity="0.2" />
-          <rect x="36" y="98" width="52" height="52" rx="20" fill="url(#auth-robot-body)" />
-          <circle cx="24" cy="116" r="10" fill="#f8fafc" />
-          <circle cx="100" cy="116" r="10" fill="#f8fafc" />
-          <rect x="28" y="36" width="68" height="72" rx="32" fill="url(#auth-robot-body)" filter="url(#auth-soft-glow)" />
-          <rect x="56" y="16" width="8" height="24" rx="4" fill="#e2e8f0" />
-          <circle cx="60" cy="14" r="8" fill="#22d3ee" />
-          <g className="auth-robot-eyes">
-            <ellipse cx="48" cy="64" rx="8" ry="9" fill="url(#auth-eye-glow)" />
-            <ellipse cx="76" cy="64" rx="8" ry="9" fill="url(#auth-eye-glow)" />
-            <circle cx="50" cy="61" r="2.2" fill="#fff" />
-            <circle cx="78" cy="61" r="2.2" fill="#fff" />
-          </g>
-          <path d="M50 82c8 10 20 10 28 0" fill="none" stroke="#64748b" strokeWidth="2.6" strokeLinecap="round" />
-        </g>
-
-        <g transform="translate(352 86)">
-          <ellipse cx="78" cy="128" rx="48" ry="12" fill="#94a3b8" opacity="0.28" />
-          <path d="M92 148c28-2 48-18 50-42 2-22-12-38-34-42l-8 84z" fill="#cbd5e1" />
-          <path d="M92 148c-8 2-18 4-28 2 4-28 10-58 18-78 18 8 22 28 16 76z" fill="#e2e8f0" />
-          <path d="M48 122c10-48 92-48 102 0v32H48z" fill="#1d4ed8" />
-          <path d="M56 122c10-40 76-40 86 0v18H56z" fill="#2563eb" />
-          <circle cx="96" cy="58" r="26" fill="#1e293b" />
-          <path d="M74 56c4-20 48-22 50 2-12 12-40 16-50-2z" fill="#0f172a" />
+        <g transform="translate(430 108)">
+          <path d="M78 132c22 0 40-10 46-28 4-14-6-30-22-36l-6 64z" fill="var(--auth-chair)" />
+          <path d="M48 128c8-46 88-46 98 0v28H48z" fill="var(--auth-shirt-dark)" />
+          <path d="M56 128c8-38 74-38 84 0v16H56z" fill="var(--auth-shirt)" />
+          <circle cx="96" cy="62" r="26" fill="var(--auth-hair)" />
+          <path d="M74 60c6-20 48-22 50 4-14 10-38 14-50-4z" fill="#0f172a" />
         </g>
       </svg>
     </div>
@@ -176,6 +207,7 @@ export default function AuthSplitLayout({ children }) {
         </section>
 
         <div className="mx-auto w-full min-w-0 max-w-md">
+          <AuthSceneArt className="mb-6 w-full md:hidden" />
           {children}
         </div>
       </div>

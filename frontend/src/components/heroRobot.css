@@ -47,29 +47,91 @@
   }
 }
 
+.auth-scene {
+  background: linear-gradient(160deg, #e7f0ff 0%, #eef2ff 48%, #f5f7ff 100%);
+  --auth-blob: #d7e6ff;
+  --auth-blob-2: #e4dcff;
+  --auth-desk: #eef4ff;
+  --auth-desk-edge: #d7e4ff;
+  --auth-chat: #c9dbff;
+  --auth-chat-line: #8aa8e0;
+  --auth-plant: #7ee08a;
+  --auth-plant-dark: #3ecf63;
+  --auth-pot: #ffffff;
+  --auth-laptop: #8eb6ff;
+  --auth-laptop-deep: #6366f1;
+  --auth-laptop-base: #94a3b8;
+  --auth-shirt: #2563eb;
+  --auth-shirt-dark: #1d4ed8;
+  --auth-hair: #1e293b;
+  --auth-chair: #8ea0b8;
+  --auth-dots: #9ec5ff;
+  --auth-glow: rgba(96, 165, 250, 0.28);
+}
+
+.dark .auth-scene,
+html[data-theme="dark"] .auth-scene {
+  background: linear-gradient(160deg, #0c1630 0%, #152044 52%, #0b1224 100%);
+  --auth-blob: #1b3363;
+  --auth-blob-2: #312e81;
+  --auth-desk: #13203c;
+  --auth-desk-edge: #1e3a5f;
+  --auth-chat: #243b6b;
+  --auth-chat-line: #7dd3fc;
+  --auth-plant: #34d399;
+  --auth-plant-dark: #059669;
+  --auth-pot: #1e293b;
+  --auth-laptop: #3b82f6;
+  --auth-laptop-deep: #4338ca;
+  --auth-laptop-base: #475569;
+  --auth-shirt: #3b82f6;
+  --auth-shirt-dark: #2563eb;
+  --auth-hair: #0f172a;
+  --auth-chair: #334155;
+  --auth-dots: #64748b;
+  --auth-glow: rgba(56, 189, 248, 0.22);
+}
+
 .auth-robot-eyes {
   transform-box: fill-box;
   transform-origin: center;
-  animation: auth-robot-blink 3.8s ease-in-out infinite;
+  transform: scaleY(1);
 }
 
-@keyframes auth-robot-blink {
+.auth-robot-eyes.is-blinking {
+  animation: auth-robot-blink-once 0.28s ease-in-out;
+}
+
+.auth-robot-eyes.is-double-blinking {
+  animation: auth-robot-blink-double 0.52s ease-in-out;
+}
+
+@keyframes auth-robot-blink-once {
   0%,
-  82%,
   100% {
     transform: scaleY(1);
   }
-  86% {
-    transform: scaleY(0.08);
+  38%,
+  52% {
+    transform: scaleY(0.06);
   }
-  90% {
+}
+
+@keyframes auth-robot-blink-double {
+  0%,
+  100% {
     transform: scaleY(1);
   }
-  93% {
-    transform: scaleY(0.08);
+  16%,
+  24% {
+    transform: scaleY(0.06);
   }
-  97% {
+  34% {
     transform: scaleY(1);
+  }
+  50%,
+  58% {
+    transform: scaleY(0.06);
   }
 }
 
@@ -79,7 +141,9 @@
   .hero-float-b,
   .hero-float-c,
   .hero-spin-slow,
-  .auth-robot-eyes {
+  .auth-robot-eyes,
+  .auth-robot-eyes.is-blinking,
+  .auth-robot-eyes.is-double-blinking {
     animation: none;
   }
 }

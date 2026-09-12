@@ -15,6 +15,10 @@ function isLoopbackHost(host) {
   return host === 'localhost' || host === '127.0.0.1' || host === '::1';
 }
 
+function isLoopbackUrl(urlLike) {
+  return Boolean(urlLike) && isLoopbackHost(hostnameOf(urlLike));
+}
+
 function pageIsLocalDev() {
   if (typeof window === 'undefined') return Boolean(import.meta.env.DEV);
   return isLoopbackHost(window.location.hostname);
@@ -29,6 +33,9 @@ function localDevFallback() {
   if (import.meta.env.DEV) return 'http://localhost:8081/api';
   return '';
 }
+
+const PROD_API_MISSING =
+  'Missing VITE_API_URL for production. Set Vercel Production env VITE_API_URL to the Render API origin (not localhost).';
 
 /** Ensures requests hit Express routes mounted under `/api`. */
 export function normalizeApiBaseUrl(raw) {
@@ -48,18 +55,44 @@ export function normalizeApiBaseUrl(raw) {
 }
 
 function resolveApiChoice() {
+  const isProd = Boolean(import.meta.env.PROD);
   const envRaw = strip(import.meta.env.VITE_API_URL);
-  const envIsLoopback = Boolean(envRaw) && isLoopbackHost(hostnameOf(envRaw));
+  const envIsLoopback = isLoopbackUrl(envRaw);
   const localPage = pageIsLocalDev();
-  const envUsable = Boolean(envRaw) && !(envIsLoopback && !localPage);
   const runtime = runtimeOverride();
-  const chosen = envUsable ? envRaw : (runtime || (localPage ? localDevFallback() : ''));
+  const runtimeIsLoopback = isLoopbackUrl(runtime);
+
+  let chosen = '';
+  if (isProd) {
+    if (envRaw && !envIsLoopback) chosen = envRaw;
+    else if (runtime && !runtimeIsLoopback) chosen = runtime;
+    else chosen = '';
+  } else if (localPage || import.meta.env.DEV) {
+    if (envRaw && envIsLoopback) chosen = envRaw;
+    else chosen = localDevFallback() || (envRaw && !envIsLoopback ? envRaw : '');
+  } else if (envRaw && !envIsLoopback) {
+    chosen = envRaw;
+  } else if (runtime && !runtimeIsLoopback) {
+    chosen = runtime;
+  }
+
+  const resolved = normalizeApiBaseUrl(chosen);
+  if (isProd && isLoopbackUrl(resolved)) {
+    return {
+      envRaw,
+      envIsLoopback,
+      localPage,
+      chosen: '',
+      resolved: '',
+    };
+  }
+
   return {
     envRaw,
     envIsLoopback,
     localPage,
     chosen,
-    resolved: normalizeApiBaseUrl(chosen),
+    resolved,
   };
 }
 
@@ -79,10 +112,12 @@ if (typeof window !== 'undefined') {
 
 export function getApiBaseUrl() {
   const resolved = apiChoice.resolved;
-  if (!resolved || (isLoopbackHost(hostnameOf(resolved)) && !pageIsLocalDev())) {
-    throw new Error(
-      'Missing VITE_API_URL for production. Set Vercel Production env VITE_API_URL to the Render API origin (not localhost).',
-    );
+  const isProd = Boolean(import.meta.env.PROD);
+  if (!resolved) {
+    throw new Error(PROD_API_MISSING);
+  }
+  if (isLoopbackUrl(resolved) && (isProd || !pageIsLocalDev())) {
+    throw new Error(PROD_API_MISSING);
   }
   return resolved;
 }

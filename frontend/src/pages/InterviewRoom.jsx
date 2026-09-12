@@ -6,6 +6,7 @@ import {
   MicrophoneIcon,
   CheckCircleIcon,
   PhoneXMarkIcon,
+  PhotoIcon,
 } from '@heroicons/react/24/outline';
 import { interviewService } from '../services/interviewService';
 import { useGeminiLive } from '../hooks/useGeminiLive';
@@ -21,7 +22,11 @@ import { stopInterviewerAudio, unlockInterviewerAudioElement } from '../utils/in
 import { usePopup } from '../components/AppPopup';
 import InterviewTranscriptBox from '../components/InterviewTranscriptBox';
 import { useFacialAnalysis } from '../hooks/useFacialAnalysis';
+import { useVirtualBackground } from '../hooks/useVirtualBackground';
+import BackgroundPicker from '../components/BackgroundPicker';
 import { expressionLabel } from '../utils/facialSignals';
+
+const MAX_BACKGROUND_BYTES = 8 * 1024 * 1024;
 
 const INTERVIEWER_VIDEO = '/video/ai-interview.mp4';
 const SILENCE_MS = 3000;
@@ -176,7 +181,15 @@ const InterviewRoom = ({ user }) => {
   const [avatarRatio, setAvatarRatio] = useState(16 / 9);
 
   const [sessionsReady, setSessionsReady] = useState(false);
+  const [bgPanelOpen, setBgPanelOpen] = useState(false);
+  const [bgTab, setBgTab] = useState('presets');
+  const [bgEffect, setBgEffect] = useState({ kind: 'none' });
+  const [customBackground, setCustomBackground] = useState(null);
+  const [bgError, setBgError] = useState('');
   const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const bgButtonRef = useRef(null);
+  const customBgUrlRef = useRef(null);
   const interviewerVideoRef = useRef(null);
   const videoStreamRef = useRef(null);
   const audioStreamRef = useRef(null);
@@ -259,6 +272,54 @@ const InterviewRoom = ({ user }) => {
       if (!visible) holdFnRef.current();
     },
   });
+
+  const { status: bgStatus } = useVirtualBackground({
+    videoRef,
+    canvasRef,
+    enabled: isSessionRoute && isVideoEnabled && bgEffect.kind !== 'none',
+    effect: bgEffect,
+  });
+
+  useEffect(() => () => {
+    if (customBgUrlRef.current) {
+      URL.revokeObjectURL(customBgUrlRef.current);
+      customBgUrlRef.current = null;
+    }
+  }, []);
+
+  const handleBackgroundSelect = useCallback((next) => {
+    setBgEffect(next);
+    setBgError('');
+    if (next.kind === 'blur') setBgTab('blur');
+    else if (next.id === 'custom') setBgTab('custom');
+    else setBgTab('presets');
+  }, []);
+
+  const handleBackgroundUpload = useCallback((file) => {
+    if (!file || !String(file.type || '').startsWith('image/')) {
+      setBgError('Please choose a valid image file.');
+      return;
+    }
+    if (file.size > MAX_BACKGROUND_BYTES) {
+      setBgError('Image is too large. Please use a file under 8 MB.');
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      if (customBgUrlRef.current) URL.revokeObjectURL(customBgUrlRef.current);
+      customBgUrlRef.current = url;
+      setCustomBackground({ url, name: file.name });
+      setBgEffect({ kind: 'image', id: 'custom', url });
+      setBgTab('custom');
+      setBgError('');
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      setBgError('Could not read that image. Try another file.');
+    };
+    image.src = url;
+  }, []);
 
   const muteInterviewerVideo = useCallback((node = interviewerVideoRef.current) => {
     if (!node) return;
@@ -1448,16 +1509,24 @@ const InterviewRoom = ({ user }) => {
             </div>
 
             <div className="flex min-w-0 flex-col gap-3 max-sm:flex-none sm:min-h-0">
-              <div className="relative flex aspect-video max-h-[clamp(8rem,24vh,11rem)] w-full min-w-0 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-900 sm:max-h-[32vh] sm:rounded-2xl lg:max-h-none">
+              <div className="relative max-h-[clamp(8rem,24vh,11rem)] w-full min-w-0 shrink-0 sm:max-h-[32vh] lg:max-h-none">
+                <div className="relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-xl bg-slate-900 sm:rounded-2xl">
                 {isVideoEnabled ? (
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    playsInline
-                    muted
-                    className="h-full w-full object-cover"
-                    style={{ transform: 'scaleX(-1)' }}
-                  />
+                  <>
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      playsInline
+                      muted
+                      className="h-full w-full object-cover"
+                      style={{ transform: 'scaleX(-1)' }}
+                    />
+                    <canvas
+                      ref={canvasRef}
+                      className={`pointer-events-none absolute inset-0 h-full w-full object-cover ${bgEffect.kind !== 'none' && bgStatus === 'ready' ? '' : 'hidden'}`}
+                      style={{ transform: 'scaleX(-1)' }}
+                    />
+                  </>
                 ) : (
                   <div className="text-center text-slate-400">
                     <VideoCameraIcon className="mx-auto mb-2 h-8 w-8 sm:h-12 sm:w-12" />
@@ -1486,6 +1555,21 @@ const InterviewRoom = ({ user }) => {
                   </div>
                 )}
               </div>
+                <BackgroundPicker
+                  open={bgPanelOpen}
+                  onClose={() => setBgPanelOpen(false)}
+                  effect={bgEffect}
+                  onSelect={handleBackgroundSelect}
+                  customBackground={customBackground}
+                  onUpload={handleBackgroundUpload}
+                  error={bgError}
+                  loading={bgStatus === 'loading'}
+                  unavailable={bgStatus === 'unavailable'}
+                  tab={bgTab}
+                  onTabChange={setBgTab}
+                  anchorRef={bgButtonRef}
+                />
+              </div>
               <div className="min-h-[5rem] min-w-0 overflow-hidden max-sm:max-h-[9.5rem] sm:min-h-[6.25rem] sm:flex-1">
                 <InterviewTranscriptBox
                   title="Your Transcript"
@@ -1505,20 +1589,31 @@ const InterviewRoom = ({ user }) => {
             </p>
           )}
 
-          <div className="mt-4 flex shrink-0 items-start justify-center gap-5 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:mt-3 sm:gap-8 sm:pb-2">
-            <button type="button" onClick={toggleAudio} className="flex w-[4.75rem] flex-col items-center text-[11px] text-slate-300 sm:text-xs">
+          <div className="mt-4 flex shrink-0 items-start justify-center gap-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:mt-3 sm:gap-8 sm:pb-2">
+            <button type="button" onClick={toggleAudio} className="flex w-[4.25rem] flex-col items-center text-[11px] text-slate-300 sm:w-[4.75rem] sm:text-xs">
               <span className={`flex h-11 w-11 items-center justify-center rounded-full sm:h-14 sm:w-14 ${isAudioEnabled ? 'bg-slate-700' : 'bg-red-600'}`}>
                 <MicrophoneIcon className="h-5 w-5 sm:h-6 sm:w-6" />
               </span>
               <span className="mt-1 min-h-[2rem] text-center leading-tight">Mute</span>
             </button>
-            <button type="button" onClick={toggleVideo} className="flex w-[4.75rem] flex-col items-center text-[11px] text-slate-300 sm:text-xs">
+            <button type="button" onClick={toggleVideo} className="flex w-[4.25rem] flex-col items-center text-[11px] text-slate-300 sm:w-[4.75rem] sm:text-xs">
               <span className={`flex h-11 w-11 items-center justify-center rounded-full sm:h-14 sm:w-14 ${isVideoEnabled ? 'bg-slate-700' : 'bg-red-600'}`}>
                 <VideoCameraIcon className="h-5 w-5 sm:h-6 sm:w-6" />
               </span>
               <span className="mt-1 min-h-[2rem] text-center leading-tight">Camera</span>
             </button>
-            <button type="button" onClick={requestEndInterview} className="flex w-[4.75rem] flex-col items-center text-[11px] text-slate-300 sm:text-xs">
+            <button
+              ref={bgButtonRef}
+              type="button"
+              onClick={() => setBgPanelOpen((open) => !open)}
+              className="flex w-[4.25rem] flex-col items-center text-[11px] text-slate-300 sm:w-[4.75rem] sm:text-xs"
+            >
+              <span className={`flex h-11 w-11 items-center justify-center rounded-full sm:h-14 sm:w-14 ${bgPanelOpen ? 'bg-sky-600 ring-2 ring-sky-300' : bgEffect.kind !== 'none' ? 'bg-sky-800' : 'bg-slate-700'}`}>
+                <PhotoIcon className="h-5 w-5 sm:h-6 sm:w-6" />
+              </span>
+              <span className="mt-1 min-h-[2rem] text-center leading-tight">Background</span>
+            </button>
+            <button type="button" onClick={requestEndInterview} className="flex w-[4.25rem] flex-col items-center text-[11px] text-slate-300 sm:w-[4.75rem] sm:text-xs">
               <span className="flex h-11 w-11 items-center justify-center rounded-full bg-red-600 shadow-lg shadow-red-900/40 sm:h-14 sm:w-14">
                 <PhoneXMarkIcon className="h-5 w-5 sm:h-6 sm:w-6" />
               </span>
