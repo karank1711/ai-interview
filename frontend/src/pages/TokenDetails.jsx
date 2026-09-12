@@ -42,7 +42,6 @@ export default function TokenDetails() {
   const [interviews, setInterviews] = useState(cached?.interviews || []);
   const [results, setResults] = useState(cached?.results || []);
   const [stats, setStats] = useState(cached?.stats || EMPTY_INTERVIEW_STATS);
-  const [loading, setLoading] = useState(!cached);
 
   useEffect(() => {
     if (!token) return undefined;
@@ -50,11 +49,13 @@ export default function TokenDetails() {
 
     async function load() {
       try {
-        if (!readPageCache(DASHBOARD_CACHE_KEY)) setLoading(true);
-        const [interviewResponse, resultResponse, statsResponse] = await Promise.all([
+        const statsResponse = await interviewService.getInterviewStats();
+        if (cancelled) return;
+        setStats(normalizeInterviewStats(statsResponse.data));
+
+        const [interviewResponse, resultResponse] = await Promise.all([
           interviewService.getUserInterviews(0, 20),
-          interviewService.getResultsHistory(0, 50),
-          interviewService.getInterviewStats(),
+          interviewService.getResultsHistory(0, 20),
         ]);
         if (cancelled) return;
         const next = {
@@ -68,8 +69,6 @@ export default function TokenDetails() {
         setStats(next.stats);
       } catch (error) {
         console.error('Failed to load token details:', error);
-      } finally {
-        if (!cancelled) setLoading(false);
       }
     }
 
@@ -81,18 +80,6 @@ export default function TokenDetails() {
 
   if (!token) {
     return <Navigate to="/dashboard" replace />;
-  }
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          className="h-16 w-16 rounded-full border-4 border-blue-500 border-t-transparent"
-        />
-      </div>
-    );
   }
 
   const model = buildTokenDetailModel({ token, stats, interviews, results });

@@ -4,14 +4,7 @@ const STORAGE_KEY = 'interviewiq-sidebar-open';
 const SidebarContext = createContext(null);
 
 function readStoredOpen() {
-  try {
-    const stored = sessionStorage.getItem(STORAGE_KEY);
-    if (stored === 'true') return true;
-    if (stored === 'false') return false;
-  } catch {
-    /* ignore */
-  }
-  return typeof window !== 'undefined' ? window.innerWidth >= 1024 : true;
+  return false;
 }
 
 export function SidebarProvider({ children }) {

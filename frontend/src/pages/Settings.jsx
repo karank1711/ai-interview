@@ -54,7 +54,7 @@ function Toggle({ enabled, onChange, label }) {
 
 function Segmented({ value, onChange, options }) {
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div className="grid min-w-0 grid-cols-3 gap-1.5 sm:gap-2">
       {options.map((option) => {
         const selected = value === option.value;
         return (
@@ -62,13 +62,13 @@ function Segmented({ value, onChange, options }) {
             key={option.value}
             type="button"
             onClick={() => onChange(option.value)}
-            className={`cursor-pointer rounded-xl px-3 py-2 text-sm font-medium ring-1 transition ${
+            className={`flex min-h-[2.75rem] min-w-0 cursor-pointer items-center justify-center rounded-xl px-1.5 py-2 text-center text-[clamp(0.68rem,2.6vw,0.875rem)] font-medium leading-tight ring-1 transition sm:px-3 ${
               selected
                 ? 'bg-blue-50 text-blue-700 ring-blue-500 dark:bg-blue-950/40 dark:text-blue-300'
                 : 'bg-white text-slate-600 ring-slate-200 hover:bg-slate-50 dark:bg-slate-900/40 dark:text-slate-300 dark:ring-slate-700'
             }`}
           >
-            {option.label}
+            <span className="max-w-full break-words">{option.label}</span>
           </button>
         );
       })}

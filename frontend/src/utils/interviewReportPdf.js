@@ -171,8 +171,8 @@ function sectionTitle(doc, x, y, title) {
   doc.text(title, x + 5, y);
 }
 
-export function downloadInterviewReportPdf({ user, interview, results }) {
-  if (!results && !interview) return;
+export function buildInterviewReportPdf({ user, interview, results }) {
+  if (!results && !interview) return null;
   const reviewRows = getQuestionReviewRows(results, interview);
   const interviewSummary = getInterviewSummary(results, interview);
   const gradingReady = interviewSummary.hasAnswerGrading === true;
@@ -464,7 +464,22 @@ export function downloadInterviewReportPdf({ user, interview, results }) {
     drawFooter(doc, i, totalPages);
   }
   const id = interview?.id || interview?._id || 'session';
-  doc.save(`interview-report-${id}.pdf`);
+  const filename = `interview-report-${id}.pdf`;
+  return { doc, filename };
+}
+
+export function downloadInterviewReportPdf(options) {
+  const built = buildInterviewReportPdf(options);
+  if (!built) return;
+  built.doc.save(built.filename);
+}
+
+export async function getInterviewReportPdfFile(options) {
+  const built = buildInterviewReportPdf(options);
+  if (!built) return null;
+  const blob = built.doc.output('blob');
+  const file = new File([blob], built.filename, { type: 'application/pdf' });
+  return { file, blob, filename: built.filename };
 }
 
 export default downloadInterviewReportPdf;

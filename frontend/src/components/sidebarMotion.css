@@ -122,8 +122,8 @@
 }
 
 @keyframes rocket-hover {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
+  0%, 100% { transform: translateY(6px); }
+  50% { transform: translateY(0); }
 }
 
 @keyframes rocket-flame-flicker {

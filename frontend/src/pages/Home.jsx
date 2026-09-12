@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -13,6 +13,7 @@ import AvatarStack from '../components/AvatarStack';
 import AnimatedText from '../components/AnimatedText';
 import HeroSlideshow from '../components/HeroSlideshow';
 import HomeCtaBanner from '../components/HomeCtaBanner';
+import { playHomeWelcomeVoiceOnce } from '../utils/welcomeVoice';
 
 function HeroCtas({ user, variant = 'overlay' }) {
   const secondaryClass = variant === 'overlay'
@@ -38,10 +39,10 @@ function HeroCtas({ user, variant = 'overlay' }) {
 
   return (
     <Link
-      to="/dashboard"
+      to="/interview"
       className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-[#ffffff] px-6 py-3 font-semibold text-[#1d4ed8] shadow-md transition-colors hover:bg-[#dbeafe] hover:text-[#1e3a8a] sm:w-auto"
     >
-      Go to Dashboard
+      Start Interview
       <ArrowRightIcon className="ml-2 h-5 w-5" />
     </Link>
   );
@@ -50,25 +51,31 @@ function HeroCtas({ user, variant = 'overlay' }) {
 const Home = ({ user }) => {
   const [heroSlideIndex, setHeroSlideIndex] = useState(0);
 
+  useEffect(() => {
+    if (!user) return undefined;
+    void playHomeWelcomeVoiceOnce();
+    return undefined;
+  }, [user]);
+
   const testimonials = [
     {
-      name: 'Sarah Johnson',
+      name: 'Shubham',
       role: 'Frontend Developer',
-      company: 'Tech Corp',
+      company: 'Infosys',
       content: 'InterviewIQ helped me land my dream job! The AI feedback was invaluable.',
       rating: 5,
     },
     {
-      name: 'Michael Chen',
+      name: 'Ankit Jha',
       role: 'Backend Engineer',
-      company: 'StartupXYZ',
+      company: 'Zomato',
       content: 'The realistic interview scenarios prepared me for the real thing.',
       rating: 5,
     },
     {
-      name: 'Emily Davis',
+      name: 'Karan',
       role: 'Data Analyst',
-      company: 'DataFlow',
+      company: 'Paytm',
       content: 'I improved my confidence and skills dramatically with InterviewIQ.',
       rating: 5,
     },
@@ -127,7 +134,7 @@ const Home = ({ user }) => {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
-              className="relative z-10 hidden h-full w-full min-w-0 max-w-2xl flex-col justify-center space-y-6 p-8 sm:flex md:p-14"
+              className="pointer-events-none relative z-10 hidden h-full w-full min-w-0 max-w-2xl flex-col justify-center space-y-6 px-8 py-8 sm:flex md:px-20 md:py-14 lg:px-24"
             >
               <div className="min-w-0 space-y-2 sm:space-y-4">
                 <div className="hidden items-center rounded-full bg-white/15 px-3 py-1.5 backdrop-blur-sm sm:inline-flex sm:px-4 sm:py-2">
@@ -149,13 +156,12 @@ const Home = ({ user }) => {
                   ]}
                 />
 
-                <p className="hidden max-w-2xl text-lg text-white/85 sm:block md:text-xl">
-                  Practice with AI-powered mock interviews, get instant feedback,
-                  and land your dream job with confidence.
+                <p className="hidden max-w-2xl break-words text-[clamp(1rem,2.4vw,1.25rem)] leading-7 text-white/85 sm:block">
+                  {`Practice with AI-powered mock interviews, get instant feedback, and land your dream job with confidence.`}
                 </p>
               </div>
 
-              <div className="flex flex-col gap-3 sm:flex-row sm:gap-4">
+              <div className="pointer-events-auto flex flex-col gap-3 sm:flex-row sm:gap-4">
                 <HeroCtas user={user} />
               </div>
 

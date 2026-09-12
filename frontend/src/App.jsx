@@ -117,6 +117,11 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!user) return undefined;
+    void import('./pages/Dashboard');
+  }, [user]);
+
   const logout = async () => {
     await authService.logout();
     setUser(null);
@@ -157,11 +162,15 @@ function App() {
           
           <Route 
             path="/dashboard" 
-            element={user ? <Dashboard user={user} /> : <Navigate to="/login" />} 
+            element={user ? <Home user={user} /> : <Navigate to="/login" />} 
           />
           <Route
             path="/dashboard/details"
             element={user ? <DashboardDetails /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/interview"
+            element={user ? <Dashboard user={user} /> : <Navigate to="/login" />}
           />
           <Route
             path="/interview/setup"

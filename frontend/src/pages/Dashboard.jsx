@@ -17,6 +17,7 @@ import { interviewService } from '../services/interviewService';
 import { readPageCache, writePageCache } from '../utils/pageDataCache';
 import { perfLog } from '../utils/perf';
 import { EMPTY_INTERVIEW_STATS, normalizeInterviewStats } from '../utils/interviewStats';
+import { usePopup } from '../components/AppPopup';
 
 const DASHBOARD_CACHE_KEY = 'dashboard:v2';
 
@@ -33,13 +34,14 @@ const Dashboard = ({ user }) => {
   const [interviews, setInterviews] = useState(cached?.interviews || []);
   const [results, setResults] = useState(cached?.results || []);
   const [stats, setStats] = useState(cached?.stats || EMPTY_INTERVIEW_STATS);
-  const [loading, setLoading] = useState(!cached);
+  const [statsLoading, setStatsLoading] = useState(!cached);
   const [selectedCourse, setSelectedCourse] = useState('');
   const [selectedLevel, setSelectedLevel] = useState('');
   const [selectedType, setSelectedType] = useState('');
   const [heroSlideIndex, setHeroSlideIndex] = useState(0);
   const [startingInterview, setStartingInterview] = useState(false);
   const navigate = useNavigate();
+  const { showPopup } = usePopup();
 
   const courses = [
     { value: 'BTECH', label: 'BTech' },
@@ -66,25 +68,29 @@ const Dashboard = ({ user }) => {
     async function fetchDashboardData() {
       const started = performance.now();
       try {
-        if (!readPageCache(DASHBOARD_CACHE_KEY)) setLoading(true);
-        const [interviewResponse, resultResponse, statsResponse] = await Promise.all([
+        const statsResponse = await interviewService.getInterviewStats();
+        if (cancelled) return;
+        setStats(normalizeInterviewStats(statsResponse.data));
+        setStatsLoading(false);
+
+        const [interviewResponse, resultResponse] = await Promise.all([
           interviewService.getUserInterviews(0, 20),
-          interviewService.getResultsHistory(0, 50),
-          interviewService.getInterviewStats(),
+          interviewService.getResultsHistory(0, 20),
         ]);
         if (cancelled) return;
-        const interviewList = interviewResponse.data || [];
-        const resultList = resultResponse.data || [];
-        const next = buildDashboardState(interviewList, resultList, statsResponse.data);
+        const next = buildDashboardState(
+          interviewResponse.data || [],
+          resultResponse.data || [],
+          statsResponse.data
+        );
         writePageCache(DASHBOARD_CACHE_KEY, next);
         setInterviews(next.interviews);
         setResults(next.results);
-        setStats(next.stats);
         perfLog('dashboard-data', `${Math.round(performance.now() - started)}ms`);
       } catch (error) {
         console.error('Failed to fetch dashboard data:', error);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setStatsLoading(false);
       }
     }
 
@@ -95,7 +101,12 @@ const Dashboard = ({ user }) => {
 
   const handleStartInterview = async () => {
     if (!selectedCourse || !selectedLevel || !selectedType) {
-      alert('Please select all interview parameters');
+      showPopup({
+        type: 'error',
+        title: 'Interview parameters',
+        message: 'Please select all interview parameters',
+        confirmLabel: 'OK',
+      });
       return;
     }
     if (startingInterview) return;
@@ -116,18 +127,6 @@ const Dashboard = ({ user }) => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full"
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#070b16] py-6">
       <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
@@ -139,24 +138,24 @@ const Dashboard = ({ user }) => {
         >
           <HeroSlideshow showControls onIndexChange={setHeroSlideIndex} />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-950/50 to-slate-900/20" />
-          <div className="relative z-10 flex h-full min-h-[220px] max-w-2xl min-w-0 flex-col justify-center p-4 sm:min-h-[280px] sm:p-8 md:min-h-[320px] md:p-12">
-            <p className="mb-3 inline-flex w-fit max-w-full truncate items-center rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
+          <div className="pointer-events-none relative z-10 flex h-full min-h-[220px] w-full min-w-0 max-w-2xl flex-col justify-center px-4 py-4 sm:min-h-[280px] sm:py-8 md:min-h-[320px] md:px-20 md:py-12 lg:px-24">
+            <p className="mb-3 inline-flex w-fit max-w-full items-center rounded-full bg-white/15 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
               AI-Powered Interview Platform
             </p>
             <AnimatedText
               as="h1"
               key={heroSlideIndex}
               replayKey={heroSlideIndex}
-                  className="break-words text-[clamp(1.25rem,5vw,2.25rem)] font-bold text-white"
+              className="break-words text-[clamp(1.25rem,5vw,2.25rem)] font-bold leading-tight text-white"
               text={`Welcome back, ${user?.name || 'there'}!`}
             />
-            <p className="mt-3 max-w-xl text-white/85">
-              Ready to practice your interview skills?
+            <p className="mt-3 max-w-xl break-words text-[clamp(0.9rem,3.4vw,1.125rem)] leading-6 text-white/85">
+              {`Ready to practice your interview skills?`}
             </p>
             <button
               type="button"
               onClick={() => document.getElementById('start-interview')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-              className="mt-6 inline-flex w-fit items-center rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-3 font-medium text-white transition-all hover:from-blue-600 hover:to-purple-700"
+              className="mt-6 pointer-events-auto inline-flex w-fit items-center rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-3 font-medium text-white transition-all hover:from-blue-600 hover:to-purple-700"
             >
               Start Interview
               <ArrowRightIcon className="ml-2 h-5 w-5" />
@@ -165,7 +164,9 @@ const Dashboard = ({ user }) => {
         </motion.div>
 
         {/* Stats Cards */}
-        <InterviewStatTokens stats={stats} />
+        <div className={statsLoading ? 'opacity-80' : ''}>
+          <InterviewStatTokens stats={stats} />
+        </div>
 
         <div className="grid grid-cols-1 gap-8">
           {/* Start Interview Section */}

@@ -80,6 +80,23 @@ function isRepeatQuestionIntent(text) {
   );
 }
 
+function isDontKnowIntent(text) {
+  const normalized = normalizeSpokenIntent(text);
+  if (!normalized) return false;
+  const words = normalized.split(' ').filter(Boolean);
+  if (words.length === 0 || words.length > 18) return false;
+  return (
+    /i don t know/.test(normalized) ||
+    /i do not know/.test(normalized) ||
+    /i have no idea/.test(normalized) ||
+    /no idea/.test(normalized) ||
+    /not sure( about)?( this| the)?( answer| question)?/.test(normalized) ||
+    /skip( this)?( question)?/.test(normalized) ||
+    /pass( on)?( this)?( one| question)?/.test(normalized) ||
+    /don t know (this|the|that)( answer| question)?/.test(normalized)
+  );
+}
+
 function candidateFirstName(user) {
   const raw = String(user?.name || user?.fullName || '').trim();
   if (!raw) return 'there';
@@ -192,6 +209,9 @@ const InterviewRoom = ({ user }) => {
   const resumeFnRef = useRef(() => {});
   const greetingDoneRef = useRef(false);
   const handleRepeatRef = useRef(async () => {});
+  const handleDontKnowRef = useRef(async () => {});
+  const repeatInFlightRef = useRef(false);
+  const dontKnowInFlightRef = useRef(false);
   const askFnRef = useRef(() => {});
   const micToggleGenRef = useRef(0);
   const evalPrepRef = useRef({
@@ -327,6 +347,8 @@ const InterviewRoom = ({ user }) => {
         committedTranscriptRef.current = '';
         hadSpeechRef.current = false;
         lastSpeechAtRef.current = 0;
+        repeatInFlightRef.current = false;
+        dontKnowInFlightRef.current = false;
         setPhaseSafe('LISTENING');
         setStatusMessage('Listening to your answer');
       }
@@ -343,10 +365,16 @@ const InterviewRoom = ({ user }) => {
       committedTranscriptRef.current = committed;
       setAnswer(shown);
       if (shown) scheduleDraftEvalRef.current(shown);
-      if (
-        phaseRef.current === 'LISTENING'
-        && isRepeatQuestionIntent(committed || shown)
-      ) {
+      if (phaseRef.current !== 'LISTENING') return;
+      if (advancingRef.current || endingRef.current) return;
+      if (repeatInFlightRef.current || dontKnowInFlightRef.current) return;
+      const intentText = committed;
+      if (!intentText) return;
+      if (isDontKnowIntent(intentText)) {
+        handleDontKnowRef.current();
+        return;
+      }
+      if (isRepeatQuestionIntent(intentText)) {
         handleRepeatRef.current();
       }
     },
@@ -750,10 +778,11 @@ const InterviewRoom = ({ user }) => {
   }, []);
 
   const handleRepeatQuestion = useCallback(async () => {
-    if (endingRef.current) return;
+    if (endingRef.current || repeatInFlightRef.current || dontKnowInFlightRef.current) return;
     if (phaseRef.current === 'AI_SPEAKING') return;
     const item = questionsRef.current[indexRef.current];
     if (!item?.questionText) return;
+    repeatInFlightRef.current = true;
     advancingRef.current = true;
     geminiRef.current.stopListening();
     resetAnswerCapture();
@@ -764,6 +793,9 @@ const InterviewRoom = ({ user }) => {
     resetInterviewerVideo();
     try {
       await geminiRef.current.sendQuestion(item.questionText, { repeat: true });
+    } catch (error) {
+      console.error('[GEMINI] Repeat question failed', error);
+      repeatInFlightRef.current = false;
     } finally {
       advancingRef.current = false;
     }
@@ -810,17 +842,83 @@ const InterviewRoom = ({ user }) => {
     advancingRef.current = false;
   }, [enterHold, requestNextQuestion, resetAnswerCapture, resetInterviewerVideo]);
 
+  const handleDontKnowAnswer = useCallback(async () => {
+    if (endingRef.current || dontKnowInFlightRef.current || repeatInFlightRef.current) return;
+    if (phaseRef.current !== 'LISTENING') return;
+    dontKnowInFlightRef.current = true;
+    advancingRef.current = true;
+    geminiRef.current.stopListening({ endTurn: true });
+    const questionIndex = indexRef.current;
+    const answerText = String(transcriptRef.current || '').trim() || "I don't know this answer";
+    answersByIndexRef.current[questionIndex] = answerText;
+    submittedIndexRef.current[questionIndex] = true;
+    const question = questionsRef.current[questionIndex];
+    const planned = plannedCountRef.current || 6;
+    const nextIndex = questionIndex + 1;
+    const needNext = nextIndex < planned;
+    setPhaseSafe('FEEDBACK');
+    setStatusMessage('Okay, no problem');
+    if (needNext && !questionsRef.current[nextIndex]) {
+      requestNextQuestion({
+        previousQuestion: question?.questionText || '',
+        candidateAnswer: answerText,
+        evaluation: 'unanswered',
+        feedback: 'Candidate said they did not know the answer.',
+      }).catch((error) => {
+        console.error('[HF-QUESTION] next question failed', error);
+      });
+    }
+    try {
+      await saveCurrentAnswer();
+    } catch (error) {
+      console.error('[ANSWER] Could not save skipped answer', error);
+    }
+    try {
+      await speakThenWait(() => geminiRef.current.sendFeedback('Okay, no problem.'));
+    } catch (error) {
+      console.error('[GEMINI] Skip acknowledgement failed', error);
+    }
+    if (endingRef.current) {
+      advancingRef.current = false;
+      return;
+    }
+    if (nextIndex >= planned) {
+      setPhaseSafe('CLOSING');
+      setStatusMessage('Wrapping up the interview...');
+      try {
+        await speakThenWait(() => geminiRef.current.sendClosingRemarks(
+          questionsRef.current.slice(0, nextIndex).map((item, index) => ({
+            questionText: item.questionText,
+            answer: answersByIndexRef.current[index] || '',
+          }))
+        ));
+      } catch (error) {
+        console.error('[GEMINI] Closing remarks failed', error);
+      }
+      advancingRef.current = false;
+      endInterviewRef.current('COMPLETED');
+      return;
+    }
+    try {
+      await goToNextQuestion();
+    } catch (error) {
+      console.error('[GEMINI] Next question after skip failed', error);
+      dontKnowInFlightRef.current = false;
+      advancingRef.current = false;
+    }
+  }, [goToNextQuestion, requestNextQuestion, saveCurrentAnswer, speakThenWait]);
+  handleDontKnowRef.current = handleDontKnowAnswer;
+
   const advanceAfterSilence = useCallback(async () => {
     if (advancingRef.current || endingRef.current) return;
     if (phaseRef.current !== 'LISTENING') return;
     const answerText = String(transcriptRef.current || '').trim();
+    if (isDontKnowIntent(answerText)) {
+      await handleDontKnowAnswer();
+      return;
+    }
     if (isRepeatQuestionIntent(answerText)) {
-      advancingRef.current = true;
-      try {
-        await handleRepeatQuestion();
-      } finally {
-        advancingRef.current = false;
-      }
+      await handleRepeatQuestion();
       return;
     }
     const questionIndex = indexRef.current;
@@ -935,7 +1033,7 @@ const InterviewRoom = ({ user }) => {
       return;
     }
     await goToNextQuestion();
-  }, [finalizePreparedEvaluation, goToNextQuestion, handleRepeatQuestion, requestNextQuestion, saveCurrentAnswer, speakThenWait]);
+  }, [finalizePreparedEvaluation, goToNextQuestion, handleDontKnowAnswer, handleRepeatQuestion, requestNextQuestion, saveCurrentAnswer, speakThenWait]);
 
   const endInterview = useCallback(async (endReason = 'ENDED_EARLY') => {
     if (endingRef.current) return;
@@ -1310,33 +1408,34 @@ const InterviewRoom = ({ user }) => {
 
   if (isSessionRoute) {
     return (
-      <div className="h-[calc(100dvh-4rem)] bg-slate-950 text-white overflow-hidden">
-        <div className="h-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 flex flex-col min-h-0 min-w-0">
-          <div className="flex items-center justify-between gap-3 mb-3 shrink-0 min-w-0">
+      <div className="h-[calc(100dvh-4rem)] overflow-x-hidden overflow-y-auto bg-slate-950 text-white sm:overflow-hidden">
+        <div className="mx-auto flex min-h-0 min-w-0 max-w-7xl flex-col overflow-x-hidden px-2 py-2 max-sm:h-auto sm:h-full sm:px-6 sm:py-3 lg:px-8">
+          <div className="mb-2 flex shrink-0 items-center justify-between gap-2 min-w-0 sm:mb-3 sm:gap-3">
             <div className="flex min-w-0 items-center gap-2">
               <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-red-500 animate-pulse" />
-              <h1 className="truncate text-[clamp(0.95rem,3.8vw,1.125rem)] font-semibold">AI Interview Session</h1>
+              <h1 className="truncate text-[clamp(0.9rem,3.8vw,1.125rem)] font-semibold">AI Interview Session</h1>
             </div>
-            <p className="shrink-0 text-xs text-slate-300 sm:text-sm">
+            <p className="shrink-0 text-[11px] text-slate-300 sm:text-sm">
               Question {currentQuestionIndex + 1}/{plannedQuestionCount || questions.length || 0}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0">
-            <div className="flex flex-col min-h-0">
+          <div className="flex min-w-0 flex-col gap-4 overflow-x-hidden max-sm:flex-none max-sm:overflow-visible sm:min-h-0 sm:flex-1 sm:gap-3 sm:overflow-y-auto lg:grid lg:grid-cols-2 lg:overflow-hidden lg:gap-4">
+            <div className="flex min-w-0 flex-col gap-3 max-sm:flex-none sm:min-h-0">
               <div
-                className="relative mx-auto overflow-hidden rounded-2xl bg-slate-900 shrink-0"
+                className="relative mx-auto w-full max-h-[clamp(8rem,24vh,11rem)] shrink-0 overflow-hidden rounded-xl bg-slate-900 sm:max-h-[32vh] sm:rounded-2xl lg:max-h-none"
                 style={{
                   aspectRatio: String(avatarRatio),
-                  width: `min(100%, calc(38vh * ${avatarRatio}))`,
+                  width: '100%',
+                  maxWidth: `min(100%, calc(38vh * ${avatarRatio}))`,
                 }}
               >
                 {interviewerVideo}
-                <span className="absolute left-3 top-3 rounded-full bg-violet-600/90 px-3 py-1 text-xs font-medium">
+                <span className="absolute left-2 top-2 rounded-full bg-violet-600/90 px-2 py-0.5 text-[10px] font-medium sm:left-3 sm:top-3 sm:px-3 sm:py-1 sm:text-xs">
                   AI Interviewer
                 </span>
               </div>
-              <div className="mt-3 min-h-0 flex-1 overflow-hidden">
+              <div className="min-h-[4.5rem] min-w-0 overflow-hidden max-sm:max-h-[9rem] sm:min-h-[5.5rem] sm:flex-1">
                 <InterviewTranscriptBox
                   title="AI Interviewer Transcript"
                   accent="purple"
@@ -1348,29 +1447,29 @@ const InterviewRoom = ({ user }) => {
               </div>
             </div>
 
-            <div className="flex flex-col min-h-0">
-              <div className="relative rounded-2xl overflow-hidden bg-slate-900 aspect-video shrink-0 flex items-center justify-center">
+            <div className="flex min-w-0 flex-col gap-3 max-sm:flex-none sm:min-h-0">
+              <div className="relative flex aspect-video max-h-[clamp(8rem,24vh,11rem)] w-full min-w-0 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-900 sm:max-h-[32vh] sm:rounded-2xl lg:max-h-none">
                 {isVideoEnabled ? (
                   <video
                     ref={videoRef}
                     autoPlay
                     playsInline
                     muted
-                    className="w-full h-full object-cover"
+                    className="h-full w-full object-cover"
                     style={{ transform: 'scaleX(-1)' }}
                   />
                 ) : (
-                  <div className="text-slate-400 text-center">
-                    <VideoCameraIcon className="w-12 h-12 mx-auto mb-2" />
-                    <p>Camera is off</p>
+                  <div className="text-center text-slate-400">
+                    <VideoCameraIcon className="mx-auto mb-2 h-8 w-8 sm:h-12 sm:w-12" />
+                    <p className="text-xs sm:text-sm">Camera is off</p>
                   </div>
                 )}
-                <span className="absolute left-3 top-3 rounded-full bg-emerald-600/90 px-3 py-1 text-xs font-medium">
+                <span className="absolute left-2 top-2 rounded-full bg-emerald-600/90 px-2 py-0.5 text-[10px] font-medium sm:left-3 sm:top-3 sm:px-3 sm:py-1 sm:text-xs">
                   You
                 </span>
                 {isVideoEnabled && (
-                  <div className="absolute right-3 top-3 max-w-[70%] rounded-lg bg-slate-950/80 px-3 py-2 text-[11px] leading-4 text-slate-100 backdrop-blur-sm">
-                    <p className="font-medium">
+                  <div className="absolute right-2 top-2 max-w-[62%] rounded-lg bg-slate-950/80 px-2 py-1.5 text-[10px] leading-4 text-slate-100 backdrop-blur-sm sm:right-3 sm:top-3 sm:max-w-[70%] sm:px-3 sm:py-2 sm:text-[11px]">
+                    <p className="truncate font-medium">
                       {facialLive.loading
                         ? 'Starting visual analysis…'
                         : facialLive.error
@@ -1378,7 +1477,7 @@ const InterviewRoom = ({ user }) => {
                           : `Expression: ${expressionLabel(facialLive.expression)}`}
                     </p>
                     {!facialLive.loading && !facialLive.error && (
-                      <p className="mt-0.5 text-slate-300">
+                      <p className="mt-0.5 hidden truncate text-slate-300 sm:block">
                         {facialLive.faceVisible
                           ? 'Face visible · visual cues only'
                           : 'Face not visible · visual cues only'}
@@ -1387,7 +1486,7 @@ const InterviewRoom = ({ user }) => {
                   </div>
                 )}
               </div>
-              <div className="mt-3 min-h-0 flex-1 overflow-hidden">
+              <div className="min-h-[5rem] min-w-0 overflow-hidden max-sm:max-h-[9.5rem] sm:min-h-[6.25rem] sm:flex-1">
                 <InterviewTranscriptBox
                   title="Your Transcript"
                   accent="green"
@@ -1401,27 +1500,29 @@ const InterviewRoom = ({ user }) => {
           </div>
 
           {statusMessage && (
-            <p className="mt-2 text-center text-sm text-sky-300 shrink-0">{statusMessage}</p>
+            <p className="mt-3 shrink-0 px-1 text-center text-[clamp(0.7rem,3vw,0.875rem)] leading-5 text-sky-300 break-words sm:mt-2">
+              {statusMessage}
+            </p>
           )}
 
-          <div className="mt-3 pb-2 flex items-end justify-center gap-8 shrink-0">
-            <button type="button" onClick={toggleAudio} className="flex flex-col items-center text-xs text-slate-300">
-              <span className={`flex h-14 w-14 items-center justify-center rounded-full ${isAudioEnabled ? 'bg-slate-700' : 'bg-red-600'}`}>
-                <MicrophoneIcon className="h-6 w-6" />
+          <div className="mt-4 flex shrink-0 items-end justify-center gap-5 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:mt-3 sm:gap-8 sm:pb-2">
+            <button type="button" onClick={toggleAudio} className="flex min-w-[3.25rem] flex-col items-center text-[11px] text-slate-300 sm:text-xs">
+              <span className={`flex h-11 w-11 items-center justify-center rounded-full sm:h-14 sm:w-14 ${isAudioEnabled ? 'bg-slate-700' : 'bg-red-600'}`}>
+                <MicrophoneIcon className="h-5 w-5 sm:h-6 sm:w-6" />
               </span>
               Mute
             </button>
-            <button type="button" onClick={toggleVideo} className="flex flex-col items-center text-xs text-slate-300">
-              <span className={`flex h-14 w-14 items-center justify-center rounded-full ${isVideoEnabled ? 'bg-slate-700' : 'bg-red-600'}`}>
-                <VideoCameraIcon className="h-6 w-6" />
+            <button type="button" onClick={toggleVideo} className="flex min-w-[3.25rem] flex-col items-center text-[11px] text-slate-300 sm:text-xs">
+              <span className={`flex h-11 w-11 items-center justify-center rounded-full sm:h-14 sm:w-14 ${isVideoEnabled ? 'bg-slate-700' : 'bg-red-600'}`}>
+                <VideoCameraIcon className="h-5 w-5 sm:h-6 sm:w-6" />
               </span>
               Camera
             </button>
-            <button type="button" onClick={requestEndInterview} className="flex flex-col items-center text-xs text-slate-300">
-              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-red-600 shadow-lg shadow-red-900/40">
-                <PhoneXMarkIcon className="h-7 w-7" />
+            <button type="button" onClick={requestEndInterview} className="flex min-w-[4.5rem] flex-col items-center text-[11px] text-slate-300 sm:text-xs">
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-red-600 shadow-lg shadow-red-900/40 sm:h-16 sm:w-16">
+                <PhoneXMarkIcon className="h-6 w-6 sm:h-7 sm:w-7" />
               </span>
-              End Interview
+              <span className="max-w-[4.75rem] text-center leading-tight">End Interview</span>
             </button>
           </div>
         </div>
@@ -1467,7 +1568,7 @@ const InterviewRoom = ({ user }) => {
                     <p>Camera is off</p>
                   </div>
                 )}
-                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-4">
+                <div className="absolute bottom-4 left-1/2 hidden -translate-x-1/2 space-x-4 sm:flex">
                   <button
                     type="button"
                     onClick={toggleVideo}
@@ -1483,6 +1584,20 @@ const InterviewRoom = ({ user }) => {
                     <MicrophoneIcon className="w-5 h-5" />
                   </button>
                 </div>
+              </div>
+              <div className="mt-3 flex justify-center gap-8 sm:hidden">
+                <button type="button" onClick={toggleVideo} className="flex min-w-[4.5rem] flex-col items-center gap-1">
+                  <span className={`flex h-12 w-12 items-center justify-center rounded-full ${isVideoEnabled ? 'bg-red-500 text-white' : 'bg-gray-700 text-gray-300'}`}>
+                    <VideoCameraIcon className="h-5 w-5" />
+                  </span>
+                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Camera</span>
+                </button>
+                <button type="button" onClick={toggleAudio} className="flex min-w-[4.5rem] flex-col items-center gap-1">
+                  <span className={`flex h-12 w-12 items-center justify-center rounded-full ${isAudioEnabled ? 'bg-green-500 text-white' : 'bg-gray-700 text-gray-300'}`}>
+                    <MicrophoneIcon className="h-5 w-5" />
+                  </span>
+                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Microphone</span>
+                </button>
               </div>
 
               <div className="mt-6 text-center">

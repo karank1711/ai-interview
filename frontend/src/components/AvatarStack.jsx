@@ -1,19 +1,18 @@
 export const TESTIMONIAL_AVATARS = [
   {
-    src: 'https://randomuser.me/api/portraits/women/44.jpg',
-    alt: 'InterviewIQ user',
+    src: '/avatars/shubham.jpg',
+    alt: 'Shubham',
+    objectPosition: '42% 18%',
   },
   {
-    src: 'https://randomuser.me/api/portraits/men/32.jpg',
-    alt: 'InterviewIQ user',
+    src: '/avatars/ankit-jha.jpg',
+    alt: 'Ankit Jha',
+    objectPosition: '50% 28%',
   },
   {
-    src: 'https://randomuser.me/api/portraits/women/68.jpg',
-    alt: 'InterviewIQ user',
-  },
-  {
-    src: 'https://randomuser.me/api/portraits/men/75.jpg',
-    alt: 'InterviewIQ user',
+    src: '/avatars/karan.jpg',
+    alt: 'Karan',
+    objectPosition: '72% 22%',
   },
 ];
 
@@ -29,7 +28,7 @@ export default function AvatarStack({
           src={avatar.src}
           alt={avatar.alt || ''}
           className={`${className} relative rounded-full border-2 border-white object-cover`}
-          style={{ zIndex: index + 1 }}
+          style={{ zIndex: index + 1, objectPosition: avatar.objectPosition || '50% 20%' }}
         />
       ))}
     </div>

@@ -4,11 +4,14 @@ import { motion } from 'framer-motion';
 import { authService } from '../services/authService';
 import { mapAuthError } from '../utils/authErrors.js';
 import { usePopup } from '../components/AppPopup';
+import { useSidebar } from '../context/SidebarContext';
+import { markWelcomeVoicePending } from '../utils/welcomeVoice';
 
 const AuthCallback = ({ setUser }) => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const { showPopup } = usePopup();
+  const { close } = useSidebar();
 
   useEffect(() => {
     let cancelled = false;
@@ -18,12 +21,17 @@ const AuthCallback = ({ setUser }) => {
         const user = await authService.completeOAuthRedirect();
         if (cancelled) return;
         setUser(user);
+        markWelcomeVoicePending();
+        close();
         showPopup({
           type: 'success',
           title: 'Welcome back',
-          message: 'You are signed in. Redirecting you to Home.',
+          message: 'You are signed in.',
         });
         navigate('/', { replace: true });
+        void authService.getSessionUser().then((full) => {
+          if (!cancelled && full) setUser(full);
+        }).catch(() => {});
       } catch (err) {
         if (cancelled) return;
         setError(mapAuthError(err, err.message || 'Sign-in failed.'));

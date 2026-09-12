@@ -213,7 +213,7 @@ const Features = () => {
               <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Ready to start practicing?</h2>
               <p className="mt-2 text-sm text-slate-500">Join candidates who use InterviewIQ to prepare with confidence.</p>
               <Link
-                to="/dashboard"
+                to="/interview"
                 className="mt-5 inline-flex cursor-pointer items-center rounded-xl bg-gradient-to-r from-blue-500 to-violet-600 px-5 py-2.5 text-sm font-semibold text-white"
               >
                 Start interview
@@ -222,7 +222,13 @@ const Features = () => {
             </div>
             <div className="flex items-center gap-3">
               {TESTIMONIAL_AVATARS.slice(0, 3).map((avatar) => (
-                <img key={avatar.src} src={avatar.src} alt="" className="h-12 w-12 rounded-full object-cover ring-2 ring-white" />
+                <img
+                  key={avatar.src}
+                  src={avatar.src}
+                  alt={avatar.alt}
+                  className="h-12 w-12 rounded-full object-cover ring-2 ring-white"
+                  style={{ objectPosition: avatar.objectPosition || '50% 20%' }}
+                />
               ))}
               <div className="flex text-amber-400">
                 {Array.from({ length: 5 }).map((_, index) => (

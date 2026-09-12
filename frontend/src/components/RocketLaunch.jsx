@@ -43,8 +43,8 @@ export default function RocketLaunch({
   }, []);
 
   return (
-    <div className={`relative overflow-hidden ${className}`} aria-hidden="true">
-      <div className="rocket-launch pointer-events-none absolute inset-0">
+    <div className={`relative overflow-visible ${className}`} aria-hidden="true">
+      <div className="rocket-launch pointer-events-none absolute inset-x-0 bottom-0 top-1">
         <img
           src={src}
           alt=""

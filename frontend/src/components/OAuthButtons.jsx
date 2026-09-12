@@ -1,8 +1,8 @@
 const googleButtonClass =
-  'w-full inline-flex min-h-11 items-center justify-center gap-3 py-2.5 px-4 sm:px-5 rounded-full bg-white text-[15px] font-medium text-neutral-800 border border-gray-200 shadow-[0_1px_2px_rgba(60,64,67,0.18),0_2px_6px_rgba(60,64,67,0.08)] hover:bg-[#f8f9fa] hover:shadow-[0_1px_3px_rgba(60,64,67,0.22)] active:bg-[#f1f3f4] disabled:opacity-50 disabled:cursor-not-allowed transition-all';
+  'oauth-google-btn oauth-brand-btn w-full inline-flex min-h-11 items-center justify-center gap-3 py-2.5 px-4 sm:px-5 rounded-full bg-gradient-to-b from-[#ffffff] to-[#f1f3f4] text-[15px] font-medium text-[#1f2937] border border-gray-200 shadow-[0_1px_2px_rgba(60,64,67,0.18),0_2px_6px_rgba(60,64,67,0.08)] hover:from-[#ffffff] hover:to-[#e8eaed] disabled:opacity-50 disabled:cursor-not-allowed transition-all';
 
 const githubButtonClass =
-  'w-full inline-flex min-h-11 items-center justify-center gap-3 py-2.5 px-4 sm:px-5 rounded-full text-[15px] font-medium text-neutral-900 border border-gray-300 bg-gradient-to-b from-white to-[#e8eaed] shadow-[0_1px_2px_rgba(0,0,0,0.08)] hover:from-[#f8f9fa] hover:to-[#dfe1e5] disabled:opacity-50 disabled:cursor-not-allowed transition-all';
+  'oauth-brand-btn w-full inline-flex min-h-11 items-center justify-center gap-3 py-2.5 px-4 sm:px-5 rounded-full text-[15px] font-medium text-neutral-900 border border-gray-300 bg-gradient-to-b from-[#ffffff] to-[#e8eaed] shadow-[0_1px_2px_rgba(0,0,0,0.08)] hover:from-[#f8f9fa] hover:to-[#dfe1e5] disabled:opacity-50 disabled:cursor-not-allowed transition-all';
 
 const GoogleIcon = () => (
   <svg className="w-5 h-5" viewBox="0 0 48 48" aria-hidden="true">
@@ -21,9 +21,15 @@ const GitHubIcon = () => (
 
 const OAuthButtons = ({ onGoogle, onGitHub, loading = false }) => (
   <div className="mt-6 space-y-3">
-    <button type="button" onClick={onGoogle} disabled={loading} className={googleButtonClass}>
+    <button
+      type="button"
+      onClick={onGoogle}
+      disabled={loading}
+      className={googleButtonClass}
+      style={{ background: '#ffffff', color: '#1f2937' }}
+    >
       <GoogleIcon />
-      <span>Continue with Google</span>
+      <span className="font-medium" style={{ color: '#1f2937' }}>Continue with Google</span>
     </button>
     <button type="button" onClick={onGitHub} disabled={loading} className={githubButtonClass}>
       <GitHubIcon />

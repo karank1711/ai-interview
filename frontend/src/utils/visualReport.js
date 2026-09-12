@@ -84,9 +84,9 @@ export function getFriendlyVisualCards(visual) {
       tone: tone(lookAwayStatus),
       value: `${lookingAway}%`,
       explanation:
-        lookingAway >= 40
+        lookingAway >= 45
           ? 'Needs Improvement — You frequently looked away from the camera.'
-          : lookingAway >= 20
+          : lookingAway >= 25
             ? 'Moderate — You looked away from the camera several times.'
             : 'Good — You rarely looked away from the camera.',
     },
@@ -97,9 +97,9 @@ export function getFriendlyVisualCards(visual) {
       tone: tone(awayStatus),
       value: `${awayFromScreen}%`,
       explanation:
-        awayFromScreen >= 40
+        awayFromScreen >= 45
           ? 'Needs Improvement — Visual attention was often away from the interview camera.'
-          : awayFromScreen >= 20
+          : awayFromScreen >= 25
             ? 'Moderate — Visual attention left the camera at times during the interview.'
             : 'Good — Your visual attention was mostly focused on the interview.',
     },

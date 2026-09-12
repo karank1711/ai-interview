@@ -63,6 +63,22 @@ router.post("/gemini-token", asyncHandler(async (req, res) => {
   }
 }));
 
+router.post("/welcome-tts", asyncHandler(async (req, res) => {
+  try {
+    const audio = await synthesizeInterviewerSpeech("Welcome to InterviewIQ");
+    res.setHeader("Content-Type", audio.mimeType);
+    res.setHeader("Cache-Control", "no-store");
+    return res.send(audio.buffer);
+  } catch (error) {
+    const status = error.statusCode || 502;
+    console.error("[GROQ-TTS] welcome error");
+    return res.status(status).json({
+      success: false,
+      message: "Could not generate interviewer voice.",
+    });
+  }
+}));
+
 router.post("/:id/interviewer/tts", asyncHandler(async (req, res) => {
   if (!validateInterviewId(req, res)) return;
   const interview = await getInterviewForUser(req.params.id, req.user.id);

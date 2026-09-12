@@ -74,22 +74,25 @@ const SUCCESS_FEATURES = [
 
 const TESTIMONIALS = [
   {
-    name: 'Priya Sharma',
+    name: 'Shubham',
     role: 'Software Engineer',
     quote: 'InterviewIQ helped me practice calmly and walk into my interviews with a clear structure.',
     src: TESTIMONIAL_AVATARS[0].src,
+    objectPosition: TESTIMONIAL_AVATARS[0].objectPosition,
   },
   {
-    name: 'Rahul Mehta',
+    name: 'Ankit Jha',
     role: 'Product Analyst',
     quote: 'The feedback after every answer showed me exactly what to improve next.',
     src: TESTIMONIAL_AVATARS[1].src,
+    objectPosition: TESTIMONIAL_AVATARS[1].objectPosition,
   },
   {
-    name: 'Ananya Iyer',
+    name: 'Karan',
     role: 'Frontend Developer',
     quote: 'Mock interviews felt realistic. I landed my first offer after two weeks of practice.',
     src: TESTIMONIAL_AVATARS[2].src,
+    objectPosition: TESTIMONIAL_AVATARS[2].objectPosition,
   },
 ];
 
@@ -204,7 +207,12 @@ export default function About() {
             {TESTIMONIALS.map((item) => (
               <article key={item.name} className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-100 dark:bg-slate-800 dark:ring-slate-700">
                 <div className="mb-3 flex items-center gap-3">
-                  <img src={item.src} alt="" className="h-10 w-10 rounded-full object-cover" />
+                  <img
+                    src={item.src}
+                    alt={item.name}
+                    className="h-10 w-10 rounded-full object-cover"
+                    style={{ objectPosition: item.objectPosition || '50% 20%' }}
+                  />
                   <div>
                     <p className="text-sm font-semibold text-slate-900 dark:text-white">{item.name}</p>
                     <p className="text-xs text-slate-500">{item.role}</p>

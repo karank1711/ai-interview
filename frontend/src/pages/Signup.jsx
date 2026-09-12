@@ -5,6 +5,8 @@ import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { authService } from '../services/authService';
 import OAuthButtons from '../components/OAuthButtons';
 import { usePopup } from '../components/AppPopup';
+import { useSidebar } from '../context/SidebarContext';
+import { markWelcomeVoicePending } from '../utils/welcomeVoice';
 
 const Signup = ({ setUser }) => {
   const [formData, setFormData] = useState({
@@ -24,6 +26,14 @@ const Signup = ({ setUser }) => {
   const [resendIn, setResendIn] = useState(0);
   const navigate = useNavigate();
   const { showPopup } = usePopup();
+  const { close } = useSidebar();
+
+  const goHomeAfterAuth = (user) => {
+    markWelcomeVoicePending();
+    close();
+    setUser(user);
+    navigate('/');
+  };
 
   useEffect(() => {
     if (resendIn <= 0) return undefined;
@@ -79,8 +89,7 @@ const Signup = ({ setUser }) => {
         return;
       }
 
-      setUser(response.data.user);
-      navigate('/');
+      goHomeAfterAuth(response.data.user);
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {
@@ -99,13 +108,15 @@ const Signup = ({ setUser }) => {
         email: formData.email,
         password: formData.password,
       });
-      setUser(response.data.user);
+      goHomeAfterAuth(response.data.user);
       showPopup({
         type: 'success',
         title: 'Email verified',
-        message: 'Your account is active. Redirecting you to Home.',
+        message: 'Your account is active.',
       });
-      navigate('/');
+      void authService.getSessionUser().then((full) => {
+        if (full) setUser(full);
+      }).catch(() => {});
     } catch (err) {
       setError(err.message || 'Wrong verification code. Please try again.');
     } finally {
@@ -436,7 +447,7 @@ const Signup = ({ setUser }) => {
                 <div className="w-full border-t border-gray-300 dark:border-gray-600" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white dark:bg-gray-800 text-gray-500">Or sign up with</span>
+                <span className="oauth-divider-label px-2 text-gray-500 dark:text-slate-200">Or sign up with</span>
               </div>
             </div>
 

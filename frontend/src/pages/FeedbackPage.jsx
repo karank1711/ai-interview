@@ -26,10 +26,6 @@ const FeedbackPage = () => {
     load();
   }, []);
 
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading feedback...</div>;
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 py-6 dark:bg-[#070b16] sm:py-8">
       <div className="mx-auto max-w-5xl px-3 sm:px-4">
@@ -37,7 +33,9 @@ const FeedbackPage = () => {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-xl bg-white p-4 shadow-lg dark:bg-gray-800 sm:p-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">AI Feedback</h1>
           <div className="space-y-4">
-            {results.length === 0 ? (
+            {loading ? (
+              <p className="text-gray-600 dark:text-gray-300">Loading feedback...</p>
+            ) : results.length === 0 ? (
               <p className="text-gray-600 dark:text-gray-300">No feedback available yet. Complete a mock test first.</p>
             ) : (
               results.map((item) => (

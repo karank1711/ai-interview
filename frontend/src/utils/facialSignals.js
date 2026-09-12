@@ -59,20 +59,21 @@ function classifyGaze(gazeX, gazeY, pose, blink) {
   const yaw = pose.yaw || 0;
   const pitch = pose.pitch || 0;
   const roll = pose.roll || 0;
-  const eyesOff = Math.abs(gazeX) > 0.34 || Math.abs(gazeY) > 0.4;
-  const headOff = Math.abs(yaw) > 20 || Math.abs(pitch) > 18 || Math.abs(roll) > 24;
-  const lookingAtCamera = blink < 0.6 && !eyesOff && !headOff;
+  const blinking = blink >= 0.45;
+  const eyesOff = Math.abs(gazeX) > 0.5 || Math.abs(gazeY) > 0.55;
+  const headOff = Math.abs(yaw) > 34 || Math.abs(pitch) > 30 || Math.abs(roll) > 38;
+  const lookingAtCamera = !eyesOff && !headOff;
   let direction = 'center';
-  if (Math.abs(gazeX) >= Math.abs(gazeY) && Math.abs(gazeX) > 0.22) direction = gazeX > 0 ? 'right' : 'left';
-  else if (Math.abs(gazeY) > 0.24) direction = gazeY > 0 ? 'down' : 'up';
-  if (Math.abs(yaw) > 16 && direction === 'center') direction = yaw > 0 ? 'right' : 'left';
+  if (Math.abs(gazeX) >= Math.abs(gazeY) && Math.abs(gazeX) > 0.28) direction = gazeX > 0 ? 'right' : 'left';
+  else if (Math.abs(gazeY) > 0.3) direction = gazeY > 0 ? 'down' : 'up';
+  if (Math.abs(yaw) > 24 && direction === 'center') direction = yaw > 0 ? 'right' : 'left';
   const alignedOff =
-    (direction === 'left' && yaw < -12) ||
-    (direction === 'right' && yaw > 12) ||
-    (direction === 'down' && pitch > 10) ||
-    (direction === 'up' && pitch < -12);
-  const combinedOffScreen = blink < 0.6 && eyesOff && headOff && alignedOff;
-  return { gazeX, gazeY, yaw, pitch, roll, blink, lookingAtCamera, direction, eyesOff, headOff, combinedOffScreen };
+    (direction === 'left' && yaw < -24) ||
+    (direction === 'right' && yaw > 24) ||
+    (direction === 'down' && pitch > 20) ||
+    (direction === 'up' && pitch < -22);
+  const combinedOffScreen = !blinking && eyesOff && headOff && alignedOff;
+  return { gazeX, gazeY, yaw, pitch, roll, blink, blinking, lookingAtCamera, direction, eyesOff, headOff, combinedOffScreen };
 }
 
 export function estimateGazeAndHead(map, pose) {
@@ -177,10 +178,12 @@ export class FaceSignalAggregator {
       gaze.blink
     );
     const lookingAtCamera = stableGaze.lookingAtCamera;
-    this.smooth.onCamera = this.smooth.onCamera * 0.8 + (lookingAtCamera ? 1 : 0) * 0.2;
-    this.smooth.combinedOff = this.smooth.combinedOff * 0.82 + (stableGaze.combinedOffScreen ? 1 : 0) * 0.18;
-    const onCamera = this.smooth.onCamera >= 0.48 && this.smooth.combinedOff < 0.45;
-    const offScreen = this.smooth.combinedOff >= 0.52;
+    if (!stableGaze.blinking) {
+      this.smooth.onCamera = this.smooth.onCamera * 0.9 + (lookingAtCamera ? 1 : 0) * 0.1;
+      this.smooth.combinedOff = this.smooth.combinedOff * 0.9 + (stableGaze.combinedOffScreen ? 1 : 0) * 0.1;
+    }
+    const onCamera = this.smooth.onCamera >= 0.4 && this.smooth.combinedOff < 0.58;
+    const offScreen = this.smooth.combinedOff >= 0.68;
     this.lastGaze = {
       gazeX: round(this.smooth.gazeX, 3),
       gazeY: round(this.smooth.gazeY, 3),
@@ -223,7 +226,7 @@ export class FaceSignalAggregator {
     this.sums.pitch2 += pose.pitch * pose.pitch;
     this.sums.look += look;
 
-    if (!onCamera) this.lookingAway += 1;
+    if (offScreen && this.offSince && now - this.offSince >= 1800) this.lookingAway += 1;
     if (blink >= 0.5 && !this.blinking) {
       this.blinks += 1;
       this.blinking = true;
@@ -235,18 +238,18 @@ export class FaceSignalAggregator {
 
   updateAttention(onCamera, offScreen, now) {
     this.attentionSamples += 1;
-    if (onCamera && !offScreen) {
+    if (!offScreen) {
       this.onCameraSamples += 1;
       this.onSince = this.onSince || now;
       if (this.offSince) {
         const dur = now - this.offSince;
-        if (dur >= 2500) {
+        if (dur >= 3000) {
           this.offScreenEvents += 1;
           this.offScreenMs += dur;
         }
         this.offSince = 0;
       }
-      if (now - this.onSince >= 700 && this.attentionState !== 'NORMAL') {
+      if (now - this.onSince >= 900 && this.attentionState !== 'NORMAL') {
         const wasWarning = this.attentionState === 'ATTENTION_WARNING' || this.attentionState === 'OFF_SCREEN_SUSPECTED';
         this.attentionState = 'NORMAL';
         return wasWarning ? 'recovered' : null;
@@ -254,17 +257,13 @@ export class FaceSignalAggregator {
       return null;
     }
 
-    if (!offScreen) {
-      return null;
-    }
-
     this.onSince = 0;
     if (!this.offSince) this.offSince = now;
     const away = now - this.offSince;
-    if (away >= 1600 && this.attentionState === 'NORMAL') {
+    if (away >= 2500 && this.attentionState === 'NORMAL') {
       this.attentionState = 'OFF_SCREEN_SUSPECTED';
     }
-    if (away >= 3800 && this.attentionState !== 'ATTENTION_WARNING') {
+    if (away >= 4500 && this.attentionState !== 'ATTENTION_WARNING') {
       this.attentionState = 'ATTENTION_WARNING';
       this.attentionWarnings += 1;
       return 'warning';
@@ -294,7 +293,7 @@ export class FaceSignalAggregator {
     const durationSec = Math.max(0, (this.lastAt - this.startedAt) / 1000);
     if (this.offSince) {
       const dur = this.lastAt - this.offSince;
-      if (dur >= 2500) {
+      if (dur >= 3000) {
         this.offScreenEvents += 1;
         this.offScreenMs += dur;
       }

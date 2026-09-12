@@ -136,6 +136,7 @@ async function loadAppUser(session) {
       const started = performance.now();
       const response = await api.get('/auth/me', {
         headers: { Authorization: `Bearer ${session.access_token}` },
+        timeout: AUTH_REQUEST_TIMEOUT_MS,
       });
       perfLog('/auth/me', `${Math.round(performance.now() - started)}ms`);
       return response.data?.data?.user
@@ -271,8 +272,9 @@ export const authService = {
     if (error) {
       throwAuthError(error, 'Login failed. Please try again.');
     }
-    const user = await loadAppUser(data.session);
-    return { success: true, data: { user } };
+    const localUser = toAppUser(null, data.session.user);
+    void loadAppUser(data.session).catch(() => {});
+    return { success: true, data: { user: localUser } };
   },
 
   verifyEmailCode: async (email, code, userId) => {
@@ -358,7 +360,9 @@ export const authService = {
     if (!data.session?.user) {
       throw new Error('Sign-in did not complete. Please try again.');
     }
-    return loadAppUser(data.session);
+    const localUser = toAppUser(null, data.session.user);
+    void loadAppUser(data.session).catch(() => {});
+    return localUser;
     })();
     try {
       return await completeOAuthInflight;

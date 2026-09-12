@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
@@ -23,6 +23,7 @@ function HeroSlideshow({
   const [index, setIndex] = useState(0);
   const count = slides.length || 1;
   const fitClass = objectFit === 'contain' ? 'object-contain' : 'object-cover';
+  const touchStartX = useRef(null);
 
   useEffect(() => {
     onIndexChange?.(index);
@@ -40,8 +41,27 @@ function HeroSlideshow({
     setIndex((current) => (current + direction + count) % count);
   };
 
+  const onTouchStart = (event) => {
+    touchStartX.current = event.changedTouches?.[0]?.clientX ?? null;
+  };
+
+  const onTouchEnd = (event) => {
+    const start = touchStartX.current;
+    touchStartX.current = null;
+    if (start == null) return;
+    const end = event.changedTouches?.[0]?.clientX;
+    if (end == null) return;
+    const delta = end - start;
+    if (Math.abs(delta) < 40) return;
+    go(delta > 0 ? -1 : 1);
+  };
+
   return (
-    <div className="absolute inset-0 overflow-hidden bg-slate-950">
+    <div
+      className="absolute inset-0 overflow-hidden bg-slate-950"
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+    >
       {slides.map((src, slideIndex) => {
         const active = slideIndex === index;
         return (
@@ -67,7 +87,7 @@ function HeroSlideshow({
             type="button"
             aria-label="Previous slide"
             onClick={() => go(-1)}
-            className="absolute left-1.5 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm transition hover:bg-white/35 sm:left-3 sm:h-10 sm:w-10 md:left-5"
+            className="absolute left-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm transition hover:bg-white/35 md:flex md:left-5"
           >
             <ChevronLeftIcon className="h-5 w-5" />
           </button>
@@ -75,11 +95,11 @@ function HeroSlideshow({
             type="button"
             aria-label="Next slide"
             onClick={() => go(1)}
-            className="absolute right-1.5 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm transition hover:bg-white/35 sm:right-3 sm:h-10 sm:w-10 md:right-5"
+            className="absolute right-3 top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm transition hover:bg-white/35 md:flex md:right-5"
           >
             <ChevronRightIcon className="h-5 w-5" />
           </button>
-          <div className="absolute bottom-2 left-1/2 z-20 flex -translate-x-1/2 gap-1.5 sm:bottom-4 sm:gap-2">
+          <div className="absolute bottom-2 left-1/2 z-20 hidden -translate-x-1/2 gap-2 md:flex">
             {slides.map((_, dotIndex) => (
               <button
                 key={dotIndex}

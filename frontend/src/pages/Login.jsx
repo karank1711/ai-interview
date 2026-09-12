@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import { authService } from '../services/authService';
 import OAuthButtons from '../components/OAuthButtons';
 import { usePopup } from '../components/AppPopup';
+import { useSidebar } from '../context/SidebarContext';
+import { markWelcomeVoicePending } from '../utils/welcomeVoice';
 
 const Login = ({ setUser }) => {
   const [formData, setFormData] = useState({
@@ -17,10 +19,17 @@ const Login = ({ setUser }) => {
   const location = useLocation();
   const [error, setError] = useState(() => location.state?.error || '');
   const { showPopup } = usePopup();
+  const { close } = useSidebar();
 
-  useEffect(() => {
-    import('./Dashboard');
-  }, []);
+  const finishLogin = (user) => {
+    markWelcomeVoicePending();
+    close();
+    setUser(user);
+    navigate('/');
+    void authService.getSessionUser().then((full) => {
+      if (full) setUser(full);
+    }).catch(() => {});
+  };
 
   const handleChange = (e) => {
     setFormData({
@@ -37,13 +46,12 @@ const Login = ({ setUser }) => {
 
     try {
       const response = await authService.login(formData);
-      setUser(response.data.user);
       showPopup({
         type: 'success',
         title: 'Welcome back',
-        message: 'You are signed in. Redirecting you to Home.',
+        message: 'You are signed in.',
       });
-      navigate('/');
+      finishLogin(response.data.user);
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.');
     } finally {
@@ -223,7 +231,7 @@ const Login = ({ setUser }) => {
                 <div className="w-full border-t border-gray-300 dark:border-gray-600" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white dark:bg-gray-800 text-gray-500">Or continue with</span>
+                <span className="oauth-divider-label px-2 text-gray-500 dark:text-slate-200">Or continue with</span>
               </div>
             </div>
 

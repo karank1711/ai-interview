@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 import AnimatedCounter from '../components/AnimatedCounter';
 import BackButton from '../components/BackButton';
 import DetailMetricCard from '../components/DetailMetricCard';
@@ -22,18 +21,19 @@ export default function ProgressTracking() {
   const [interviews, setInterviews] = useState(cached?.interviews || []);
   const [results, setResults] = useState(cached?.results || []);
   const [stats, setStats] = useState(cached?.stats || EMPTY_INTERVIEW_STATS);
-  const [loading, setLoading] = useState(!cached);
 
   useEffect(() => {
     let cancelled = false;
 
     async function load() {
       try {
-        if (!readInitialCache()) setLoading(true);
-        const [interviewResponse, resultResponse, statsResponse] = await Promise.all([
+        const statsResponse = await interviewService.getInterviewStats();
+        if (cancelled) return;
+        setStats(normalizeInterviewStats(statsResponse.data));
+
+        const [interviewResponse, resultResponse] = await Promise.all([
           interviewService.getUserInterviews(0, 50),
           interviewService.getResultsHistory(0, 50),
-          interviewService.getInterviewStats(),
         ]);
         if (cancelled) return;
         const next = {
@@ -49,8 +49,6 @@ export default function ProgressTracking() {
       } catch (error) {
         console.error('Failed to load progress:', error);
         if (!cancelled && !cached) setStats(EMPTY_INTERVIEW_STATS);
-      } finally {
-        if (!cancelled) setLoading(false);
       }
     }
 
@@ -59,18 +57,6 @@ export default function ProgressTracking() {
       cancelled = true;
     };
   }, []);
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          className="h-16 w-16 rounded-full border-4 border-blue-500 border-t-transparent"
-        />
-      </div>
-    );
-  }
 
   const overview = buildProgressOverview({ stats, interviews, results });
   const completionValue = percent(stats.completedInterviews, stats.totalInterviews);

@@ -11,7 +11,8 @@ import {
   ShareIcon,
 } from '@heroicons/react/24/outline';
 import { interviewService } from '../services/interviewService';
-import { downloadInterviewReportPdf } from '../utils/interviewReportPdf';
+import { downloadInterviewReportPdf, getInterviewReportPdfFile } from '../utils/interviewReportPdf';
+import { usePopup } from '../components/AppPopup';
 import { readPageCache, writePageCache } from '../utils/pageDataCache';
 import { perfLog } from '../utils/perf';
 import { getInterviewSummary, getQuestionReviewRows, resultBadgeClass } from '../utils/interviewReportData';
@@ -21,6 +22,7 @@ import AnimatedCounter from '../components/AnimatedCounter';
 const Results = ({ user }) => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { showPopup } = usePopup();
   const cached = readPageCache(`results:${id}`);
   const [results, setResults] = useState(cached?.results || null);
   const [interview, setInterview] = useState(cached?.interview || null);
@@ -71,9 +73,59 @@ const Results = ({ user }) => {
     }
   };
 
-  const shareResults = () => {
-    // Implement share functionality
-    alert('Share feature coming soon!');
+  const shareResults = async () => {
+    if (!interview || !results) return;
+    const reportUrl = window.location.href;
+    const title = 'InterviewIQ Interview Report';
+    const text = 'Here is my InterviewIQ interview report.';
+    try {
+      const pdf = await getInterviewReportPdfFile({ user, interview, results });
+      if (pdf?.file && navigator.canShare) {
+        try {
+          if (navigator.canShare({ files: [pdf.file] })) {
+            await navigator.share({
+              files: [pdf.file],
+              title,
+              text,
+            });
+            return;
+          }
+        } catch (error) {
+          if (error?.name === 'AbortError') return;
+        }
+      }
+      if (typeof navigator.share === 'function') {
+        try {
+          await navigator.share({ title, text, url: reportUrl });
+          return;
+        } catch (error) {
+          if (error?.name === 'AbortError') return;
+        }
+      }
+      downloadInterviewReportPdf({ user, interview, results });
+      try {
+        await navigator.clipboard.writeText(reportUrl);
+        showPopup({
+          type: 'success',
+          title: 'Report ready to share',
+          message: 'The PDF was downloaded and the report link was copied to your clipboard.',
+        });
+      } catch {
+        showPopup({
+          type: 'status',
+          title: 'Report downloaded',
+          message: 'Sharing is not supported here. The PDF was downloaded so you can attach it yourself.',
+        });
+      }
+    } catch (error) {
+      if (error?.name === 'AbortError') return;
+      console.error('Failed to share report:', error);
+      showPopup({
+        type: 'error',
+        title: 'Share unavailable',
+        message: 'Could not share the report. Try downloading the PDF instead.',
+      });
+    }
   };
 
   const getScoreColor = (score) => {
@@ -251,6 +303,7 @@ const Results = ({ user }) => {
                   Download PDF
                 </button>
                 <button
+                  type="button"
                   onClick={shareResults}
                   className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >

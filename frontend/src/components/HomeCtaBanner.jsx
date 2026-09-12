@@ -125,10 +125,10 @@ export default function HomeCtaBanner() {
               </span>
             </div>
             <Link
-              to="/dashboard"
+              to="/interview"
               className="mt-7 inline-flex min-h-11 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-fuchsia-500 px-7 py-3 text-sm font-semibold text-white shadow-[0_8px_30px_rgba(99,102,241,0.55)] transition hover:from-blue-400 hover:to-fuchsia-400"
             >
-              Go to Dashboard
+              Start Interview
               <ArrowRightIcon className="ml-2 h-4 w-4" />
             </Link>
           </motion.div>
