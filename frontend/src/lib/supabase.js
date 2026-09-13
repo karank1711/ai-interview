@@ -45,6 +45,15 @@ export async function getAccessToken() {
   return cachedAccessToken;
 }
 
+export function hasOAuthReturnParams(search = typeof window !== 'undefined' ? window.location.search : '') {
+  const params = new URLSearchParams(search);
+  return Boolean(params.get('code') || params.get('error') || params.get('error_description'));
+}
+
 export function getOAuthRedirectUrl() {
-  return `${window.location.origin}/auth/callback`;
+  const origin =
+    typeof window !== 'undefined' && window.location?.origin
+      ? window.location.origin
+      : 'http://localhost:5173';
+  return `${origin}/auth/callback`;
 }

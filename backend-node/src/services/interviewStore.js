@@ -66,7 +66,7 @@ function parseEndReason(summary) {
 
 function unwrapPerQuestionFeedback(raw) {
   if (Array.isArray(raw)) {
-    return { questions: raw, summary: null, visualBackup: null };
+    return { questions: raw, summary: null, visualBackup: null, voiceAvailable: true };
   }
   if (raw && typeof raw === "object") {
     const questions = Array.isArray(raw.questions) ? raw.questions : [];
@@ -74,10 +74,11 @@ function unwrapPerQuestionFeedback(raw) {
       questions,
       summary: raw.summary && typeof raw.summary === "object" ? raw.summary : null,
       visualBackup:
-        raw.visualAnalysis && typeof raw.visualAnalysis === "object" ? raw.visualAnalysis : null
+        raw.visualAnalysis && typeof raw.visualAnalysis === "object" ? raw.visualAnalysis : null,
+      voiceAvailable: raw.voiceAvailable !== false
     };
   }
-  return { questions: [], summary: null, visualBackup: null };
+  return { questions: [], summary: null, visualBackup: null, voiceAvailable: true };
 }
 
 export function mapResult(row) {
@@ -110,6 +111,7 @@ export function mapResult(row) {
     interviewSummary,
     perQuestionFeedback: unwrapped.questions,
     visualAnalysis,
+    voiceAvailable: unwrapped.voiceAvailable !== false,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -408,12 +410,14 @@ export async function completeInterview(interviewId, userId, analytics) {
     analytics.perQuestionFeedback && typeof analytics.perQuestionFeedback === "object"
       ? {
           ...analytics.perQuestionFeedback,
-          visualAnalysis
+          visualAnalysis,
+          voiceAvailable: analytics.voiceAvailable !== false
         }
       : {
           version: 1,
           questions: Array.isArray(analytics.perQuestionFeedback) ? analytics.perQuestionFeedback : [],
-          visualAnalysis
+          visualAnalysis,
+          voiceAvailable: analytics.voiceAvailable !== false
         };
 
   const payload = {

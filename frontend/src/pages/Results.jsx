@@ -227,6 +227,11 @@ const Results = ({ user }) => {
                     ? `You ${passed ? 'passed' : 'did not pass'} the interview`
                     : 'Answers were captured, but automatic grading was unavailable.'}
                 </p>
+                {results?.voiceAvailable === false ? (
+                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                    Interviewer voice was unavailable for this session. Your answers and report were still saved.
+                  </p>
+                ) : null}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

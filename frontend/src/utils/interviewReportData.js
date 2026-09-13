@@ -204,14 +204,14 @@ function mapReviewRow(extra, index) {
 }
 
 export function getQuestionReviewRows(results, interview) {
-  if (Array.isArray(results?.perQuestionFeedback)) {
+  if (Array.isArray(results?.perQuestionFeedback) && results.perQuestionFeedback.length) {
     return results.perQuestionFeedback.map(mapReviewRow);
   }
 
   const answers = lastAnswerMap(interview?.answers);
   if (!answers.size) return [];
   const questions = interview?.questions || [];
-  return questions
+  const rows = questions
     .map((question, index) => {
       const saved = answers.get(String(question.id));
       if (!saved) return null;
@@ -236,6 +236,26 @@ export function getQuestionReviewRows(results, interview) {
       );
     })
     .filter(Boolean);
+  const seen = new Set(rows.map((row) => String(row.questionId)));
+  answers.forEach((saved, questionId) => {
+    if (seen.has(String(questionId))) return;
+    rows.push(
+      mapReviewRow(
+        {
+          questionNumber: rows.length + 1,
+          questionId,
+          question: saved.question || `Question ${rows.length + 1}`,
+          candidateAnswer: saved.answer || '',
+          evaluation: saved.evaluation,
+          score: saved.score,
+          maxScore: 100,
+          feedback: saved.feedback,
+        },
+        rows.length
+      )
+    );
+  });
+  return rows;
 }
 
 function feedbackCopy({

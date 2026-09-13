@@ -99,6 +99,7 @@ export function useGeminiLive({
   onOutputTranscript,
   onError,
   onVoiceActivity,
+  onVoiceUnavailable,
 } = {}) {
   const transcribeSessionRef = useRef(null);
   const processorRef = useRef(null);
@@ -134,8 +135,8 @@ export function useGeminiLive({
   const endedHandlerRef = useRef(null);
   const ttsAbortRef = useRef(null);
   const audioStateRef = useRef('idle');
-  const callbacksRef = useRef({ onSpeakingChange, onInputTranscript, onOutputTranscript, onError, onVoiceActivity });
-  callbacksRef.current = { onSpeakingChange, onInputTranscript, onOutputTranscript, onError, onVoiceActivity };
+  const callbacksRef = useRef({ onSpeakingChange, onInputTranscript, onOutputTranscript, onError, onVoiceActivity, onVoiceUnavailable });
+  callbacksRef.current = { onSpeakingChange, onInputTranscript, onOutputTranscript, onError, onVoiceActivity, onVoiceUnavailable };
 
   const publishCandidateTranscript = useCallback(() => {
     const finalized = finalizedSegmentsRef.current.join(' ').trim();
@@ -557,14 +558,33 @@ export function useGeminiLive({
       if (error?.code === 'ERR_CANCELED' || error?.name === 'CanceledError' || error?.name === 'AbortError') {
         return;
       }
-      console.error('[GROQ-TTS] error');
+      const status = Number(error?.response?.status || 0);
+      const payload = error?.response?.data;
+      let message = '';
+      try {
+        if (payload instanceof Blob) {
+          message = await payload.text();
+        } else {
+          message = String(payload?.message || error.message || '');
+        }
+      } catch {
+        message = String(error.message || '');
+      }
+      const quota = status === 429
+        || /rate.?limit|tpd|quota|timeout|unavailable/i.test(message)
+        || payload?.voiceAvailable === false;
+      console.error('[GROQ-TTS] skipped voice playback', {
+        status: status || 'unknown',
+        quota,
+        message: String(message).slice(0, 180),
+      });
       audioStateRef.current = 'error';
       const turn = aiTurnRef.current;
       turn.turnComplete = true;
       turn.hadNoAudio = true;
       turn.finished = true;
       notifySpeaking(false, { turnComplete: true, kind: turn.kind, turnId: turn.id });
-      callbacksRef.current.onError?.(new Error('Could not play interviewer voice.'));
+      callbacksRef.current.onVoiceUnavailable?.();
     } finally {
       release();
     }

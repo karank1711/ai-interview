@@ -11,6 +11,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import AuthCallback from './pages/AuthCallback';
+import { hasOAuthReturnParams } from './lib/supabase';
 import { PopupProvider } from './components/AppPopup';
 import ComingSoonPage from './components/ComingSoonPage';
 import { authService } from './services/authService';
@@ -58,6 +59,14 @@ class RouteErrorBoundary extends Component {
     }
     return this.props.children;
   }
+}
+
+function OAuthReturnGate({ setUser, children }) {
+  const location = useLocation();
+  if (hasOAuthReturnParams(location.search)) {
+    return <AuthCallback setUser={setUser} />;
+  }
+  return children;
 }
 
 function PageSpinner() {
@@ -141,19 +150,34 @@ function App() {
         <PopupProvider>
           <AppShell user={user} logout={logout}>
             <Routes>
-          <Route path="/" element={<Home user={user} />} />
+          <Route
+            path="/"
+            element={
+              <OAuthReturnGate setUser={setUser}>
+                <Home user={user} />
+              </OAuthReturnGate>
+            }
+          />
           <Route path="/about" element={<About />} />
           <Route path="/features" element={<Features />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/contact" element={<Contact />} />
           
-          <Route 
-            path="/login" 
-            element={!user ? <Login setUser={setUser} /> : <Navigate to="/" />} 
+          <Route
+            path="/login"
+            element={
+              <OAuthReturnGate setUser={setUser}>
+                {!user ? <Login setUser={setUser} /> : <Navigate to="/" />}
+              </OAuthReturnGate>
+            }
           />
-          <Route 
-            path="/signup" 
-            element={!user ? <Signup setUser={setUser} /> : <Navigate to="/" />} 
+          <Route
+            path="/signup"
+            element={
+              <OAuthReturnGate setUser={setUser}>
+                {!user ? <Signup setUser={setUser} /> : <Navigate to="/" />}
+              </OAuthReturnGate>
+            }
           />
           <Route
             path="/auth/callback"

@@ -315,6 +315,7 @@ export const authService = {
       provider,
       options: {
         redirectTo: getOAuthRedirectUrl(),
+        skipBrowserRedirect: false,
       },
     });
     if (error) {

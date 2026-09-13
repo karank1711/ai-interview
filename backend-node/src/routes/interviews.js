@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { buildResultAnalytics, decodeAnswerFeedback, encodeAnswerFeedback, hasStoredGradeDetails, transcriptCommunicationHint } from "../utils/evaluation.js";
+import { buildResultAnalytics, decodeAnswerFeedback, encodeAnswerFeedback, fallbackGradeFromTranscript, hasUsableAnswerGrade, transcriptCommunicationHint, unansweredGradeResult } from "../utils/evaluation.js";
 import { createTranscribeEphemeralToken, evaluateSpokenAnswer, gradeInterviewAnswers, analyzeAnswerCompleteness, generateClosingRemarksText } from "../services/geminiLive.js";
-import { synthesizeInterviewerSpeech } from "../services/groqTts.js";
+import { synthesizeInterviewerSpeech, isTtsProviderFailure } from "../services/groqTts.js";
 import {
   buildStoredQuestion,
   generateInterviewQuestion,
@@ -49,6 +49,57 @@ function validateInterviewId(req, res) {
   return true;
 }
 
+const INTRO_QUESTION_ID = "intro-self";
+
+function clientAnswerText(item) {
+  return String(item?.userAnswer || item?.answer || "").trim();
+}
+
+function mergeScheduledQuestions(interview, extraAnswers = []) {
+  const questions = [...(interview.questions || [])];
+  const byId = new Map(questions.map((question) => [String(question.id), question]));
+  const extras = [...(interview.answers || []), ...extraAnswers];
+  for (const item of extras) {
+    const id = String(item.questionId || item.id || "");
+    if (!id || byId.has(id)) continue;
+    const question = {
+      id,
+      questionText: item.question || item.questionText || "Interview question",
+    };
+    if (id === INTRO_QUESTION_ID) questions.unshift(question);
+    else questions.push(question);
+    byId.set(id, question);
+  }
+  return questions;
+}
+
+async function persistClientAnswers(interviewId, userId, interview, extraAnswers) {
+  const extras = Array.isArray(extraAnswers) ? extraAnswers : [];
+  let saved = 0;
+  const existing = new Map();
+  for (const row of interview.answers || []) {
+    existing.set(String(row.questionId), String(row.answer || "").trim());
+  }
+  for (const item of extras) {
+    const questionId = item?.questionId;
+    const answer = clientAnswerText(item);
+    if (!questionId || !answer) continue;
+    const previous = existing.get(String(questionId));
+    if (previous) continue;
+    await addInterviewAnswer(interviewId, userId, {
+      questionId,
+      question: item.question || item.questionText || "Interview question",
+      answer,
+      timeTaken: Number(item.timeTaken || 0),
+      score: 0,
+      feedback: "",
+    });
+    existing.set(String(questionId), answer);
+    saved += 1;
+  }
+  return saved;
+}
+
 router.post("/gemini-token", asyncHandler(async (req, res) => {
   try {
     const tokens = await createTranscribeEphemeralToken();
@@ -74,6 +125,7 @@ router.post("/welcome-tts", asyncHandler(async (req, res) => {
     console.error("[GROQ-TTS] welcome error");
     return res.status(status).json({
       success: false,
+      voiceAvailable: false,
       message: "Could not generate interviewer voice.",
     });
   }
@@ -95,13 +147,20 @@ router.post("/:id/interviewer/tts", asyncHandler(async (req, res) => {
     const audio = await synthesizeInterviewerSpeech(text);
     res.setHeader("Content-Type", audio.mimeType);
     res.setHeader("Cache-Control", "no-store");
+    res.setHeader("X-Voice-Available", "true");
     return res.send(audio.buffer);
   } catch (error) {
     const status = error.statusCode || 502;
-    console.error("[GROQ-TTS] error");
-    return res.status(status).json({
+    const quota = error.code === "TTS_UNAVAILABLE" || isTtsProviderFailure(status, error.message);
+    console.error("[GROQ-TTS] error", { status, code: error.code || "" });
+    return res.status(quota ? 429 : status).json({
       success: false,
-      message: error.statusCode === 400 ? error.message : "Could not generate interviewer voice.",
+      voiceAvailable: false,
+      message: quota
+        ? "Interviewer voice is temporarily unavailable."
+        : error.statusCode === 400
+          ? error.message
+          : "Could not generate interviewer voice.",
     });
   }
 }));
@@ -361,8 +420,23 @@ router.post("/:id/analyze-completeness", asyncHandler(async (req, res) => {
 
 router.post("/:id/complete", asyncHandler(async (req, res) => {
   if (!validateInterviewId(req, res)) return;
-  const interview = await getInterviewForUser(req.params.id, req.user.id);
+  let interview = await getInterviewForUser(req.params.id, req.user.id);
   if (!interview) return res.status(404).json({ success: false, message: "Interview not found" });
+
+  const extraAnswers = Array.isArray(req.body.answers) ? req.body.answers : [];
+  const persistedFromClient = await persistClientAnswers(req.params.id, req.user.id, interview, extraAnswers);
+  if (persistedFromClient > 0) {
+    interview = await getInterviewForUser(req.params.id, req.user.id);
+    if (!interview) return res.status(404).json({ success: false, message: "Interview not found" });
+  }
+
+  const savedAnswers = interview.answers || [];
+  console.log("[EVAL] answers-loaded", {
+    interviewId: req.params.id,
+    savedAnswers: savedAnswers.length,
+    persistedFromClient,
+    clientAnswers: extraAnswers.length,
+  });
 
   const endReason = String(req.body.endReason || "COMPLETED").toUpperCase();
   const endMessages = {
@@ -377,102 +451,141 @@ router.post("/:id/complete", asyncHandler(async (req, res) => {
   const endMessage = req.body.endMessage || endMessages[endReason] || endMessages.COMPLETED;
 
   const answersByQuestion = new Map();
-  for (const saved of interview.answers || []) {
+  for (const saved of savedAnswers) {
     answersByQuestion.set(String(saved.questionId), saved);
   }
 
-  const scheduledAll = interview.questions || [];
+  const scheduledAll = mergeScheduledQuestions(interview, extraAnswers);
   const requestedAsked = Number(req.body.askedQuestionCount);
-  const askedFromAnswers = (interview.answers || []).reduce((max, item) => {
+  const askedFromAnswers = savedAnswers.reduce((max, item) => {
     const idx = scheduledAll.findIndex((q) => String(q.id) === String(item.questionId));
     return idx >= 0 ? Math.max(max, idx + 1) : max;
   }, 0);
-  let askedQuestionCount;
-  if (Number.isFinite(requestedAsked) && requestedAsked >= 0) {
-    askedQuestionCount = Math.min(requestedAsked, scheduledAll.length);
-  } else {
-    askedQuestionCount = askedFromAnswers;
+  let askedQuestionCount = Math.max(
+    askedFromAnswers,
+    Number.isFinite(requestedAsked) && requestedAsked > 0 ? requestedAsked : 0
+  );
+  if (askedQuestionCount === 0 && savedAnswers.length > 0) {
+    askedQuestionCount = scheduledAll.length;
   }
-  if (endReason === "ENDED_EARLY" && askedQuestionCount === 0 && askedFromAnswers === 0) {
-    askedQuestionCount = 0;
+  askedQuestionCount = Math.min(Math.max(askedQuestionCount, 0), scheduledAll.length);
+
+  const scheduled = [];
+  const seen = new Set();
+  for (let i = 0; i < scheduledAll.length; i += 1) {
+    const question = scheduledAll[i];
+    const id = String(question.id);
+    const hasAnswer = Boolean(String(answersByQuestion.get(id)?.answer || "").trim());
+    if (hasAnswer || i < askedQuestionCount) {
+      scheduled.push(question);
+      seen.add(id);
+    }
   }
-  const scheduled = scheduledAll.slice(0, askedQuestionCount);
+  for (const saved of savedAnswers) {
+    const id = String(saved.questionId);
+    if (seen.has(id)) continue;
+    scheduled.push({
+      id: saved.questionId,
+      questionText: saved.question || "Interview question",
+    });
+    seen.add(id);
+  }
+
   console.log("[EVAL] asked-scope", {
     interviewId: req.params.id,
-    generated: scheduledAll.length,
+    generated: (interview.questions || []).length,
+    scheduled: scheduled.length,
     askedQuestionCount,
+    savedAnswers: savedAnswers.length,
     endReason
   });
   const needsLiveGrade = scheduled.some((question) => {
     const saved = answersByQuestion.get(String(question.id));
     const transcript = String(saved?.answer || "").trim();
     if (!transcript) return false;
-    return !hasStoredGradeDetails(saved?.feedback);
+    return !hasUsableAnswerGrade(saved);
   });
-  const gradedBatch = needsLiveGrade
-    ? await gradeInterviewAnswers(
-        scheduled.map((question) => {
-          const saved = answersByQuestion.get(String(question.id));
-          return {
-            questionText: question.questionText,
-            transcript: String(saved?.answer || "").trim()
-          };
-        })
-      )
-    : scheduled.map((question) => {
-        const saved = answersByQuestion.get(String(question.id));
-        const transcript = String(saved?.answer || "").trim();
-        const decoded = decodeAnswerFeedback(saved?.feedback);
-        if (!transcript) {
-          return {
-            evaluation: "unanswered",
-            score: 0,
-            maxScore: 100,
-            mistake: "No spoken answer was submitted.",
-            idealAnswer: "A complete spoken answer covering the main points of the question.",
-            feedback: "This question was unanswered.",
-            communicationScore: 0,
-            technicalScore: 0,
-            problemSolvingApplicable: false,
-            problemSolvingScore: null
-          };
-        }
-        const evaluation = decoded.evaluation || "ungraded";
-        return {
-          evaluation,
-          score: saved?.score,
-          maxScore: 100,
-          mistake: decoded.mistake || "",
-          idealAnswer: decoded.idealAnswer || "",
-          feedback: decoded.feedback || String(saved?.feedback || ""),
-          communicationScore: decoded.communicationScore,
-          technicalScore: decoded.technicalScore ?? (Number.isFinite(Number(saved?.score)) ? Number(saved.score) : null),
-          problemSolvingApplicable: decoded.problemSolvingApplicable === true,
-          problemSolvingScore: decoded.problemSolvingScore
-        };
+  const gradeItems = scheduled.map((question) => {
+    const saved = answersByQuestion.get(String(question.id));
+    return {
+      questionText: question.questionText,
+      transcript: String(saved?.answer || "").trim()
+    };
+  });
+  const withTranscripts = gradeItems.filter((item) => item.transcript).length;
+  console.log("[EVAL] grading-input", {
+    interviewId: req.params.id,
+    sentForGrading: gradeItems.length,
+    withTranscripts,
+    needsLiveGrade,
+  });
+  let gradedBatch;
+  if (needsLiveGrade) {
+    try {
+      gradedBatch = await gradeInterviewAnswers(gradeItems);
+    } catch (error) {
+      console.error("[EVAL] grading-provider", {
+        provider: "fallback",
+        error: String(error.message || error).slice(0, 240),
       });
+      gradedBatch = gradeItems.map((item) =>
+        fallbackGradeFromTranscript(item.transcript, item.questionText)
+      );
+    }
+  } else {
+    gradedBatch = scheduled.map((question) => {
+      const saved = answersByQuestion.get(String(question.id));
+      const transcript = String(saved?.answer || "").trim();
+      const decoded = decodeAnswerFeedback(saved?.feedback);
+      if (!transcript) return unansweredGradeResult();
+      if (!hasUsableAnswerGrade(saved)) {
+        return fallbackGradeFromTranscript(transcript, question.questionText);
+      }
+      const evaluation = decoded.evaluation;
+      return {
+        evaluation,
+        score: saved?.score,
+        maxScore: 100,
+        mistake: decoded.mistake || "",
+        idealAnswer: decoded.idealAnswer || "",
+        feedback: decoded.feedback || String(saved?.feedback || ""),
+        communicationScore: decoded.communicationScore,
+        technicalScore: decoded.technicalScore ?? (Number.isFinite(Number(saved?.score)) ? Number(saved.score) : null),
+        problemSolvingApplicable: decoded.problemSolvingApplicable === true,
+        problemSolvingScore: decoded.problemSolvingScore
+      };
+    });
+  }
   const gradedQuestions = [];
   for (let i = 0; i < scheduled.length; i += 1) {
     const question = scheduled[i];
     const saved = answersByQuestion.get(String(question.id));
     const transcript = String(saved?.answer || "").trim();
-    const graded = gradedBatch[i];
+    const graded = gradedBatch[i] || fallbackGradeFromTranscript(transcript, question.questionText);
+    const usable = ["correct", "partially_correct", "incorrect", "unanswered"].includes(
+      String(graded.evaluation || "").toLowerCase()
+    );
+    const resolved = usable
+      ? { ...graded, evaluation: String(graded.evaluation).toLowerCase() }
+      : transcript
+        ? fallbackGradeFromTranscript(transcript, question.questionText)
+        : unansweredGradeResult();
     const row = {
       questionNumber: i + 1,
       questionId: question.id,
       question: question.questionText,
       candidateAnswer: transcript,
-      evaluation: graded.evaluation,
-      score: graded.score,
-      maxScore: graded.maxScore || 100,
-      mistake: graded.mistake || "",
-      idealAnswer: graded.idealAnswer || "",
-      feedback: graded.feedback || "",
+      evaluation: resolved.evaluation,
+      score: resolved.score,
+      maxScore: resolved.maxScore || 100,
+      mistake: resolved.mistake || "",
+      idealAnswer: resolved.idealAnswer || "",
+      feedback: resolved.feedback || "",
       timeTaken: Number(saved?.timeTaken || 0),
-      communicationScore: graded.communicationScore,
-      technicalScore: graded.technicalScore,
-      problemSolvingApplicable: graded.problemSolvingApplicable === true,
-      problemSolvingScore: graded.problemSolvingScore
+      communicationScore: resolved.communicationScore,
+      technicalScore: resolved.technicalScore,
+      problemSolvingApplicable: resolved.problemSolvingApplicable === true,
+      problemSolvingScore: resolved.problemSolvingScore
     };
     if (row.evaluation === "unanswered" && endReason === "ENDED_EARLY") {
       row.mistake = "No spoken answer was submitted.";
@@ -523,6 +636,7 @@ router.post("/:id/complete", asyncHandler(async (req, res) => {
     technicalScore: analytics.technicalScore,
     problemSolvingScore: analytics.problemSolvingScore,
     overallScore: analytics.overallScore,
+    hasAnswerGrading: analytics.interviewSummary.hasAnswerGrading,
     hasVisualConfidence: analytics.interviewSummary.hasVisualConfidence
   });
   const perQuestionFeedback = {
@@ -535,11 +649,25 @@ router.post("/:id/complete", asyncHandler(async (req, res) => {
     ...analytics,
     summary: `[${endReason}] ${endMessage}\n${analytics.summary}`,
     perQuestionFeedback,
-    visualAnalysis: req.body.visualAnalysis || null
+    visualAnalysis: req.body.visualAnalysis || null,
+    voiceAvailable: req.body.voiceAvailable !== false
   });
   const completed = await persistPromise;
+  console.log("[EVAL] persist", {
+    interviewId: req.params.id,
+    ok: Boolean(completed?.result),
+    resultId: completed?.result?.id || null,
+    overallScore: completed?.result?.overallScore ?? analytics.overallScore,
+    grade: completed?.result?.grade ?? analytics.grade,
+    visualAnalysis: Boolean(completed?.result?.visualAnalysis),
+  });
   if (!completed) return res.status(404).json({ success: false, message: "Interview not found" });
-  return res.json({ success: true, data: completed });
+  return res.json({
+    success: true,
+    reportGenerated: true,
+    voiceAvailable: req.body.voiceAvailable !== false,
+    data: completed
+  });
 }));
 
 router.delete("/:id", asyncHandler(async (req, res) => {

@@ -121,6 +121,74 @@ export function hasStoredGradeDetails(feedback) {
   );
 }
 
+const USABLE_GRADES = new Set(["correct", "partially_correct", "incorrect"]);
+
+export function hasUsableAnswerGrade(saved) {
+  const decoded = decodeAnswerFeedback(saved?.feedback);
+  const evaluation = String(decoded.evaluation || "").toLowerCase();
+  if (!USABLE_GRADES.has(evaluation)) return false;
+  return Number.isFinite(Number(saved?.score)) || decoded.hasDetails;
+}
+
+export function unansweredGradeResult() {
+  return {
+    evaluation: "unanswered",
+    score: 0,
+    maxScore: 100,
+    mistake: "No spoken answer was submitted.",
+    idealAnswer: "A complete spoken answer covering the main points of the question.",
+    feedback: "This question was unanswered.",
+    communicationScore: 0,
+    technicalScore: 0,
+    problemSolvingApplicable: false,
+    problemSolvingScore: null,
+  };
+}
+
+export function fallbackGradeFromTranscript(transcript, questionText = "") {
+  const answer = String(transcript || "").trim();
+  if (!answer) return unansweredGradeResult();
+  const words = answer.split(/\s+/).filter(Boolean).length;
+  const communicationScore = transcriptCommunicationHint(answer);
+  const intro = /introduce yourself/i.test(String(questionText || ""));
+  let evaluation = "incorrect";
+  let score = 28;
+  if (intro) {
+    if (words >= 40) {
+      evaluation = "correct";
+      score = 78;
+    } else if (words >= 12) {
+      evaluation = "partially_correct";
+      score = 62;
+    } else {
+      evaluation = "incorrect";
+      score = 38;
+    }
+  } else if (words >= 80) {
+    evaluation = "partially_correct";
+    score = 68;
+  } else if (words >= 30) {
+    evaluation = "partially_correct";
+    score = 58;
+  } else if (words >= 12) {
+    evaluation = "incorrect";
+    score = 42;
+  }
+  return {
+    evaluation,
+    score,
+    maxScore: 100,
+    mistake: "",
+    idealAnswer: "",
+    feedback:
+      "Fallback grade from the saved transcript because automatic AI grading was unavailable.",
+    communicationScore,
+    technicalScore: score,
+    problemSolvingApplicable: false,
+    problemSolvingScore: null,
+  };
+}
+
 function average(values) {
   const nums = values.filter((value) => Number.isFinite(Number(value)));
   if (!nums.length) return 0;

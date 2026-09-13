@@ -236,6 +236,7 @@ const InterviewRoom = ({ user }) => {
     result: null,
     timer: null,
   });
+  const voiceAvailableRef = useRef(true);
   const scheduleDraftEvalRef = useRef(() => {});
 
   const setPhaseSafe = (next) => {
@@ -456,6 +457,10 @@ const InterviewRoom = ({ user }) => {
     onError: (error) => {
       setStatusMessage(error.message || 'Live interviewer connection failed.');
       pauseInterviewerVideo();
+    },
+    onVoiceUnavailable: () => {
+      voiceAvailableRef.current = false;
+      setStatusMessage('Interviewer voice is temporarily unavailable. The interview continues.');
     },
   });
 
@@ -693,7 +698,8 @@ const InterviewRoom = ({ user }) => {
     const transcript = String(transcriptRef.current || '').trim();
     const durationSec = Math.max(1, Math.round((Date.now() - (listenStartedAtRef.current || Date.now())) / 1000));
     if (!question) return null;
-    if (askedCountRef.current < questionIndex + 1) return null;
+    askedCountRef.current = Math.max(askedCountRef.current, questionIndex + 1);
+    questionAskedRef.current = true;
     if (submittedIndexRef.current[questionIndex]) return { transcript, alreadySaved: true };
     answersByIndexRef.current[questionIndex] = transcript;
     submittedIndexRef.current[questionIndex] = true;
@@ -1104,13 +1110,14 @@ const InterviewRoom = ({ user }) => {
     const message = END_MESSAGES[endReason] || END_MESSAGES.ENDED_EARLY;
     try {
       const transcript = String(transcriptRef.current || '').trim();
-      if (
-        endReason !== 'COMPLETED' &&
-        transcript &&
-        !isRepeatQuestionIntent(transcript) &&
-        !submittedIndexRef.current[indexRef.current]
-      ) {
-        await saveCurrentAnswer();
+      if (transcript && !isRepeatQuestionIntent(transcript) && !submittedIndexRef.current[indexRef.current]) {
+        try {
+          await saveCurrentAnswer();
+        } catch (error) {
+          console.error('Failed to save final answer before report:', error);
+        }
+      } else if (questionsRef.current[indexRef.current]) {
+        askedCountRef.current = Math.max(askedCountRef.current, indexRef.current + 1);
       }
       setStatusMessage('Saving your results...');
       let visualAnalysis = null;
@@ -1119,16 +1126,30 @@ const InterviewRoom = ({ user }) => {
       } catch (error) {
         console.error('Visual analysis snapshot failed:', error);
       }
-      const askedQuestionCount = questionsRef.current
-        .slice(0, askedCountRef.current)
-        .filter((item) => item?.id !== INTRO_QUESTION_ID).length;
-      const savePromise = interviewService.completeInterview(id, {
-        endReason,
-        endMessage: message,
-        visualAnalysis,
-        askedQuestionCount,
-        askedQuestionIndex: Math.max(0, indexRef.current - 1),
-      });
+      const askedQuestionCount = Math.max(
+        askedCountRef.current,
+        questionAskedRef.current ? indexRef.current + 1 : 0,
+        answersByIndexRef.current.filter((text) => String(text || '').trim()).length,
+      );
+      const answers = questionsRef.current.slice(0, Math.max(askedQuestionCount, questionsRef.current.length)).map((item, index) => ({
+        questionId: item.id,
+        question: item.questionText,
+        userAnswer: String(answersByIndexRef.current[index] || (index === indexRef.current ? transcript : '') || '').trim(),
+        timeTaken: 0,
+      })).filter((item) => item.userAnswer);
+      try {
+        await interviewService.completeInterview(id, {
+          endReason,
+          endMessage: message,
+          visualAnalysis,
+          askedQuestionCount,
+          askedQuestionIndex: Math.max(0, indexRef.current),
+          voiceAvailable: voiceAvailableRef.current,
+          answers,
+        });
+      } catch (error) {
+        console.error('Failed to complete interview in background:', error);
+      }
       const cleanup = Promise.resolve().then(async () => {
         pauseInterviewerVideo();
         stopInterviewerAudio();
@@ -1143,9 +1164,6 @@ const InterviewRoom = ({ user }) => {
         stopMedia();
       });
       navigate(`/interview/report/${id}`);
-      savePromise.catch((error) => {
-        console.error('Failed to complete interview in background:', error);
-      });
       cleanup.catch(() => {});
       if (endReason !== 'COMPLETED') {
         showPopup({
@@ -1156,10 +1174,8 @@ const InterviewRoom = ({ user }) => {
         });
       }
     } catch (error) {
-      endingRef.current = false;
-      advancingRef.current = false;
       console.error('Failed to end interview:', error);
-      setStatusMessage('Could not end the interview.');
+      navigate(`/interview/report/${id}`);
     }
   }, [bumpEvalPrep, getFacialReport, id, navigate, pauseInterviewerVideo, saveCurrentAnswer, showPopup, stopMedia]);
 

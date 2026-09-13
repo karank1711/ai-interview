@@ -31,6 +31,16 @@ function groqErrorMessage(rawBody) {
   }
 }
 
+export function isTtsProviderFailure(status, rawBody) {
+  const code = Number(status);
+  const text = `${rawBody || ""}`.toLowerCase();
+  return (
+    code === 429
+    || code === 408
+    || /rate.?limit|tpd|tokens per day|quota|timeout|timed out|over capacity/i.test(text)
+  );
+}
+
 function requireGroqKey() {
   if (!env.groqApiKey) {
     const error = new Error("Interviewer voice is not configured.");
@@ -116,8 +126,15 @@ async function synthesizeChunk(input, signal) {
   if (!response.ok) {
     const rawBody = await response.text();
     groqLog("error", { status: response.status, message: groqErrorMessage(rawBody) });
-    const error = new Error("Could not generate interviewer voice.");
-    error.statusCode = response.status >= 500 ? 502 : 400;
+    const quota = isTtsProviderFailure(response.status, rawBody);
+    const error = new Error(
+      quota
+        ? "Interviewer voice is temporarily unavailable."
+        : "Could not generate interviewer voice."
+    );
+    error.statusCode = quota ? 429 : response.status >= 500 ? 502 : 400;
+    error.code = quota ? "TTS_UNAVAILABLE" : "TTS_ERROR";
+    error.voiceAvailable = false;
     throw error;
   }
   const bytes = Buffer.from(await response.arrayBuffer());

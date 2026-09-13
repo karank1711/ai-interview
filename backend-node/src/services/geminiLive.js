@@ -1,6 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { env } from "../config/env.js";
-import { transcriptCommunicationHint } from "../utils/evaluation.js";
+import { fallbackGradeFromTranscript, transcriptCommunicationHint } from "../utils/evaluation.js";
 
 export const TRANSCRIBE_LIVE_MODEL = "gemini-3.5-transcribe-live";
 
@@ -335,19 +335,42 @@ ${pending
   )
   .join("\n")}`;
 
-  try {
-    const response = await generateJsonContent(prompt);
-    const grades = parseGradesPayload(modelText(response) || "");
-    pending.forEach((item, offset) => {
-      const parsed =
-        (Array.isArray(grades) ? grades : []).find((grade) => Number(grade?.index) === offset + 1) ||
-        (Array.isArray(grades) ? grades[offset] : null);
-      byIndex.set(item.index, parsed ? normalizeParsedGrade(parsed, item.transcript) : ungradedResult(item.transcript));
-    });
-  } catch (error) {
-    console.error("[EVAL] Gemini grade failed", geminiErrorMessage(error));
-    pending.forEach((item) => byIndex.set(item.index, ungradedResult(item.transcript)));
+  let provider = "gemini";
+  let lastError = "";
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    try {
+      const response = await generateJsonContent(prompt);
+      const grades = parseGradesPayload(modelText(response) || "");
+      const listGrades = Array.isArray(grades) ? grades : [];
+      pending.forEach((item, offset) => {
+        const parsed =
+          listGrades.find((grade) => Number(grade?.index) === offset + 1) || listGrades[offset] || null;
+        byIndex.set(
+          item.index,
+          parsed
+            ? normalizeParsedGrade(parsed, item.transcript)
+            : fallbackGradeFromTranscript(item.transcript, item.questionText)
+        );
+      });
+      lastError = "";
+      break;
+    } catch (error) {
+      lastError = geminiErrorMessage(error);
+      console.error("[EVAL] Gemini grade failed", { attempt, message: lastError });
+      if (attempt === 2) {
+        provider = "fallback";
+        pending.forEach((item) => {
+          byIndex.set(item.index, fallbackGradeFromTranscript(item.transcript, item.questionText));
+        });
+      }
+    }
   }
+  console.log("[EVAL] grading-provider", {
+    provider,
+    pending: pending.length,
+    unanswered: unansweredIndexes.length,
+    error: lastError || null,
+  });
   return list.map((_, index) => byIndex.get(index) || unansweredResult());
 }
 
