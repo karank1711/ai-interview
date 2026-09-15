@@ -37,6 +37,9 @@ export function isTtsProviderFailure(status, rawBody) {
   return (
     code === 429
     || code === 408
+    || code === 500
+    || code === 502
+    || code === 503
     || /rate.?limit|tpd|tokens per day|quota|timeout|timed out|over capacity/i.test(text)
   );
 }
@@ -49,15 +52,16 @@ function requireGroqKey() {
   }
 }
 
-export function chunkTtsText(raw) {
+export function chunkTtsText(raw, maxChars = MAX_INPUT_CHARS) {
+  const limit = Math.max(40, Number(maxChars) || MAX_INPUT_CHARS);
   const text = String(raw || "").replace(/\s+/g, " ").trim();
   if (!text) return [];
-  if (text.length <= MAX_INPUT_CHARS) return [text];
+  if (text.length <= limit) return [text];
 
   const chunks = [];
   let remaining = text;
-  while (remaining.length > MAX_INPUT_CHARS) {
-    const window = remaining.slice(0, MAX_INPUT_CHARS);
+  while (remaining.length > limit) {
+    const window = remaining.slice(0, limit);
     let splitAt = -1;
     const sentence = window.match(/.*[.!?](\s|$)/s);
     if (sentence) splitAt = sentence[0].length;
@@ -69,7 +73,7 @@ export function chunkTtsText(raw) {
       const space = window.lastIndexOf(" ");
       if (space >= 40) splitAt = space + 1;
     }
-    if (splitAt < 40) splitAt = MAX_INPUT_CHARS;
+    if (splitAt < 40) splitAt = limit;
     chunks.push(remaining.slice(0, splitAt).trim());
     remaining = remaining.slice(splitAt).trim();
   }
@@ -142,8 +146,9 @@ async function synthesizeChunk(input, signal) {
   return bytes;
 }
 
-export async function synthesizeInterviewerSpeech(text, { signal } = {}) {
-  const chunks = chunkTtsText(String(text || "").trim());
+export async function generateGroqSpeech(text, { signal } = {}) {
+  const spoken = String(text || "").trim();
+  const chunks = chunkTtsText(spoken);
   if (!chunks.length) {
     const error = new Error("Interviewer text is required.");
     error.statusCode = 400;
@@ -157,5 +162,11 @@ export async function synthesizeInterviewerSpeech(text, { signal } = {}) {
     mimeType: "audio/wav",
     buffer: concatWavBuffers(parts),
     chunkCount: parts.length,
+    provider: "groq",
+    language: "en",
   };
+}
+
+export async function synthesizeInterviewerSpeech(text, options = {}) {
+  return generateGroqSpeech(text, options);
 }

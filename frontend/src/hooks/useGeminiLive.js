@@ -529,17 +529,22 @@ export function useGeminiLive({
         timeout: 180000,
         signal: controller.signal,
       });
+      const contentType = String(response.headers?.['content-type'] || '').split(';')[0];
+      const provider = response.headers?.['x-tts-provider'] || '';
       const blob = response.data;
-      if (!(blob instanceof Blob) || blob.size < 40) {
-        throw new Error('Interviewer audio was empty.');
-      }
-      if (String(blob.type || '').includes('json')) {
-        throw new Error('Could not generate interviewer voice.');
+      console.log('[AI-VOICE] tts response', {
+        status: response.status,
+        contentType,
+        provider,
+        bytes: blob?.size,
+      });
+      if (!(blob instanceof Blob) || blob.size < 40 || contentType.includes('json')) {
+        throw new Error('Audio is temporarily unavailable. You can still read the response.');
       }
       if (kind === 'question' && questionText) {
         lastQuestionAudioRef.current = { text: questionText, blob };
       }
-      console.log('[AI-VOICE] audio buffer created', { kind, bytes: blob.size, type: blob.type || 'unknown' });
+      console.log('[AI-VOICE] audio buffer created', { kind, bytes: blob.size, type: blob.type || 'unknown', provider });
       audioStateRef.current = 'playing';
       await playInterviewerAudioBlob(blob, {
         onStart: markPlaybackStarted,
@@ -571,11 +576,11 @@ export function useGeminiLive({
         message = String(error.message || '');
       }
       const quota = status === 429
-        || /rate.?limit|tpd|quota|timeout|unavailable/i.test(message)
-        || payload?.voiceAvailable === false;
-      console.error('[GROQ-TTS] skipped voice playback', {
+        || /rate.?limit|tpd|quota/i.test(message);
+      console.error('[AI-VOICE] skipped voice playback', {
         status: status || 'unknown',
         quota,
+        textOnly: true,
         message: String(message).slice(0, 180),
       });
       audioStateRef.current = 'error';

@@ -460,7 +460,7 @@ const InterviewRoom = ({ user }) => {
     },
     onVoiceUnavailable: () => {
       voiceAvailableRef.current = false;
-      setStatusMessage('Interviewer voice is temporarily unavailable. The interview continues.');
+      setStatusMessage('Audio is temporarily unavailable. You can still read the response.');
     },
   });
 

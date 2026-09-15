@@ -7,6 +7,7 @@ import interviewRoutes from "./routes/interviews.js";
 import questionRoutes from "./routes/questions.js";
 import resultRoutes from "./routes/results.js";
 import contactRoutes from "./routes/contact.js";
+import interviewFriendRoutes from "./routes/interviewFriend.js";
 import { requireAuth } from "./middleware/auth.js";
 import { prefetchJwks } from "./utils/jwtVerify.js";
 
@@ -42,7 +43,8 @@ app.use(
       }
       callback(new Error(`CORS blocked for origin: ${origin}`));
     },
-    credentials: true
+    credentials: true,
+    exposedHeaders: ["X-Tts-Provider", "X-Tts-Language", "X-Voice-Available", "Content-Type"],
   })
 );
 app.use(express.json({ strict: false }));
@@ -74,6 +76,7 @@ app.use("/api/contact", contactRoutes);
 app.use("/api/interviews", requireAuth, interviewRoutes);
 app.use("/api/questions", requireAuth, questionRoutes);
 app.use("/api/results", requireAuth, resultRoutes);
+app.use("/api/interview-friend", requireAuth, interviewFriendRoutes);
 
 app.use((error, req, res, next) => {
   if (error?.type === "entity.parse.failed") {
@@ -100,6 +103,7 @@ async function start() {
   );
 
   console.log(`Groq TTS: configured=${Boolean(env.groqApiKey)}`);
+  console.log(`Hindi TTS (Sarvam): configured=${Boolean(env.sarvamApiKey)}`);
   console.log(
     `Hugging Face questions: configured=${Boolean(env.huggingfaceApiKey)} model=${env.huggingfaceQuestionModel} provider=${env.huggingfaceInferenceProvider}`
   );

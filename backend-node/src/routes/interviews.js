@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { buildResultAnalytics, decodeAnswerFeedback, encodeAnswerFeedback, fallbackGradeFromTranscript, hasUsableAnswerGrade, transcriptCommunicationHint, unansweredGradeResult } from "../utils/evaluation.js";
 import { createTranscribeEphemeralToken, evaluateSpokenAnswer, gradeInterviewAnswers, analyzeAnswerCompleteness, generateClosingRemarksText } from "../services/geminiLive.js";
-import { synthesizeInterviewerSpeech, isTtsProviderFailure } from "../services/groqTts.js";
+import { synthesizeInterviewerSpeech, isTtsProviderFailure } from "../services/interviewerTts.js";
+import { sendTtsAudio } from "../services/ttsAudio.js";
 import {
   buildStoredQuestion,
   generateInterviewQuestion,
@@ -117,16 +118,15 @@ router.post("/gemini-token", asyncHandler(async (req, res) => {
 router.post("/welcome-tts", asyncHandler(async (req, res) => {
   try {
     const audio = await synthesizeInterviewerSpeech("Welcome to InterviewIQ");
-    res.setHeader("Content-Type", audio.mimeType);
-    res.setHeader("Cache-Control", "no-store");
-    return res.send(audio.buffer);
+    return sendTtsAudio(res, audio);
   } catch (error) {
     const status = error.statusCode || 502;
     console.error("[GROQ-TTS] welcome error");
     return res.status(status).json({
       success: false,
+      textOnly: true,
       voiceAvailable: false,
-      message: "Could not generate interviewer voice.",
+      message: "Audio is temporarily unavailable. You can still read the response.",
     });
   }
 }));
@@ -145,22 +145,17 @@ router.post("/:id/interviewer/tts", asyncHandler(async (req, res) => {
   }
   try {
     const audio = await synthesizeInterviewerSpeech(text);
-    res.setHeader("Content-Type", audio.mimeType);
-    res.setHeader("Cache-Control", "no-store");
-    res.setHeader("X-Voice-Available", "true");
-    return res.send(audio.buffer);
+    return sendTtsAudio(res, audio);
   } catch (error) {
     const status = error.statusCode || 502;
     const quota = error.code === "TTS_UNAVAILABLE" || isTtsProviderFailure(status, error.message);
     console.error("[GROQ-TTS] error", { status, code: error.code || "" });
     return res.status(quota ? 429 : status).json({
       success: false,
+      textOnly: true,
       voiceAvailable: false,
-      message: quota
-        ? "Interviewer voice is temporarily unavailable."
-        : error.statusCode === 400
-          ? error.message
-          : "Could not generate interviewer voice.",
+      audioError: true,
+      message: "Audio is temporarily unavailable. You can still read the response.",
     });
   }
 }));

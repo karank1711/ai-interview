@@ -492,6 +492,19 @@ export async function listResults({ userId, page = 0, size = 10 }) {
   return (data || []).map(mapResult);
 }
 
+export async function getLatestResultForUser(userId) {
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from("interview_results")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) fail(error, "Could not load result");
+  return mapResult(data);
+}
+
 export async function getResultForInterview(interviewId, userId) {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase

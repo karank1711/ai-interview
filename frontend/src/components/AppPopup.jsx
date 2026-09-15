@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CheckCircleIcon, ExclamationTriangleIcon, XMarkIcon } from '@heroicons/react/24/solid';
+import { CheckCircleIcon, Cog6ToothIcon, ExclamationTriangleIcon, XMarkIcon } from '@heroicons/react/24/solid';
 
 const PopupContext = createContext(null);
 
@@ -82,14 +82,12 @@ export function PopupProvider({ children }) {
   );
 }
 
-function AppPopup({ popup, onClose, onConfirm }) {
-  const isError = popup?.type === 'error';
-  const isConfirm = popup?.type === 'confirm';
-  const isStatus = popup?.type === 'status';
-
+export function AppModalShell({ open, title, onClose, children, icon = 'success' }) {
+  const isError = icon === 'error';
+  const isSettings = icon === 'settings';
   return (
     <AnimatePresence>
-      {popup && (
+      {open ? (
         <motion.div
           className="fixed inset-0 z-[100] flex items-center justify-center px-4"
           initial={{ opacity: 0 }}
@@ -132,59 +130,78 @@ function AppPopup({ popup, onClose, onConfirm }) {
               >
                 <XMarkIcon className="h-5 w-5" />
               </button>
-              <div className="relative flex items-start gap-4">
-                <motion.div
-                  className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-white shadow-lg ${
-                    isError
-                      ? 'bg-gradient-to-br from-red-500 to-orange-500'
-                      : 'bg-gradient-to-br from-blue-500 to-purple-600'
-                  }`}
-                  initial={{ rotateY: -90, scale: 0.6 }}
-                  animate={{ rotateY: 0, scale: 1 }}
-                  transition={{ type: 'spring', stiffness: 260, damping: 16, delay: 0.08 }}
-                >
-                  {isError ? (
-                    <ExclamationTriangleIcon className="h-8 w-8" />
-                  ) : (
-                    <CheckCircleIcon className="h-8 w-8" />
-                  )}
-                </motion.div>
-                <div className="pr-6">
-                  <h3 id="app-popup-title" className="text-xl font-bold text-gray-900 dark:text-white">
-                    {popup.title}
-                  </h3>
-                  <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">
-                    {popup.message}
-                  </p>
-                </div>
-              </div>
-              <div className="mt-6 flex justify-end gap-3">
-                {isConfirm && (
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="rounded-xl px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-white/70 dark:hover:bg-gray-800"
+              <div className="relative">
+                <div className="flex items-start gap-4">
+                  <motion.div
+                    className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-white shadow-lg ${
+                      isError
+                        ? 'bg-gradient-to-br from-red-500 to-orange-500'
+                        : 'bg-gradient-to-br from-blue-500 to-purple-600'
+                    }`}
+                    initial={{ rotateY: -90, scale: 0.6 }}
+                    animate={{ rotateY: 0, scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 260, damping: 16, delay: 0.08 }}
                   >
-                    {popup.cancelLabel}
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={isConfirm ? onConfirm : onClose}
-                  className={`rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-md ${
-                    isError || isConfirm
-                      ? 'bg-gradient-to-r from-red-500 to-orange-500'
-                      : 'bg-gradient-to-r from-blue-500 to-purple-600'
-                  }`}
-                >
-                  {popup.confirmLabel}
-                </button>
+                    {isError ? (
+                      <ExclamationTriangleIcon className="h-8 w-8" />
+                    ) : isSettings ? (
+                      <Cog6ToothIcon className="h-8 w-8" />
+                    ) : (
+                      <CheckCircleIcon className="h-8 w-8" />
+                    )}
+                  </motion.div>
+                  <div className="min-w-0 flex-1 pr-6">
+                    <h3 id="app-popup-title" className="text-xl font-bold text-gray-900 dark:text-white">
+                      {title}
+                    </h3>
+                  </div>
+                </div>
+                <div className="min-w-0">{children}</div>
               </div>
             </div>
           </motion.div>
         </motion.div>
-      )}
+      ) : null}
     </AnimatePresence>
+  );
+}
+
+function AppPopup({ popup, onClose, onConfirm }) {
+  const isError = popup?.type === 'error';
+  const isConfirm = popup?.type === 'confirm';
+  return (
+    <AppModalShell
+      open={Boolean(popup)}
+      title={popup?.title}
+      onClose={onClose}
+      icon={isError ? 'error' : 'success'}
+    >
+      <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">
+        {popup?.message}
+      </p>
+      <div className="mt-6 flex justify-end gap-3">
+        {isConfirm ? (
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-white/70 dark:text-gray-200 dark:hover:bg-gray-800"
+          >
+            {popup.cancelLabel}
+          </button>
+        ) : null}
+        <button
+          type="button"
+          onClick={isConfirm ? onConfirm : onClose}
+          className={`rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-md ${
+            isError || isConfirm
+              ? 'bg-gradient-to-r from-red-500 to-orange-500'
+              : 'bg-gradient-to-r from-blue-500 to-purple-600'
+          }`}
+        >
+          {popup?.confirmLabel}
+        </button>
+      </div>
+    </AppModalShell>
   );
 }
 

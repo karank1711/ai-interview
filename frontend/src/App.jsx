@@ -31,6 +31,7 @@ const AiQuestions = lazy(() => import('./pages/AiQuestions'));
 const MockTest = lazy(() => import('./pages/MockTest'));
 const FeedbackPage = lazy(() => import('./pages/FeedbackPage'));
 const ProgressTracking = lazy(() => import('./pages/ProgressTracking'));
+const InterviewFriend = lazy(() => import('./pages/InterviewFriend'));
 
 class RouteErrorBoundary extends Component {
   constructor(props) {
@@ -193,6 +194,10 @@ function App() {
             element={user ? <DashboardDetails /> : <Navigate to="/login" />}
           />
           <Route
+            path="/interview-friend"
+            element={user ? <InterviewFriend user={user} logout={logout} /> : <Navigate to="/login" />}
+          />
+          <Route
             path="/interview"
             element={user ? <Dashboard user={user} /> : <Navigate to="/login" />}
           />
@@ -256,6 +261,7 @@ function App() {
 
 function shouldShowSidebar(pathname, interviewSession) {
   if (interviewSession) return false;
+  if (pathname === '/interview-friend' || pathname.startsWith('/interview-friend/')) return false;
   if (pathname === '/login' || pathname === '/signup' || pathname.startsWith('/auth/')) return false;
   return true;
 }
@@ -273,6 +279,7 @@ function AppShell({ user, logout, children }) {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [pathname]);
   const interviewSession = /\/interview\/[^/]+\/session\/?$/.test(pathname);
+  const friendPage = pathname === '/interview-friend' || pathname.startsWith('/interview-friend/');
   const showSidebar = shouldShowSidebar(pathname, interviewSession);
   return (
     <SidebarProvider>
@@ -280,6 +287,7 @@ function AppShell({ user, logout, children }) {
         user={user}
         logout={logout}
         interviewSession={interviewSession}
+        friendPage={friendPage}
         showSidebar={showSidebar}
         routeKey={key}
       >
@@ -289,7 +297,7 @@ function AppShell({ user, logout, children }) {
   );
 }
 
-function AppShellLayout({ user, logout, interviewSession, showSidebar, routeKey, children }) {
+function AppShellLayout({ user, logout, interviewSession, friendPage, showSidebar, routeKey, children }) {
   const { open, close } = useSidebar();
   const [isDesktop, setIsDesktop] = useState(() => (
     typeof window !== 'undefined' ? window.innerWidth >= 1024 : true
@@ -306,9 +314,9 @@ function AppShellLayout({ user, logout, interviewSession, showSidebar, routeKey,
   const contentShift = showSidebar && open && isDesktop ? '16rem' : '0rem';
   return (
     <div
-        className={`${interviewSession ? 'h-dvh overflow-hidden' : 'min-h-screen'} w-full max-w-full overflow-x-clip bg-gray-50 dark:bg-[#070b16] transition-colors duration-300`}
+        className={`${interviewSession || friendPage ? 'h-dvh overflow-hidden' : 'min-h-screen'} w-full max-w-full overflow-x-clip bg-gray-50 dark:bg-[#070b16] transition-colors duration-300`}
     >
-      <Navbar user={user} logout={logout} showSidebarToggle={showSidebar} />
+      {friendPage ? null : <Navbar user={user} logout={logout} showSidebarToggle={showSidebar} />}
       {showSidebar && open && !isDesktop ? (
         <button
           type="button"
@@ -319,7 +327,7 @@ function AppShellLayout({ user, logout, interviewSession, showSidebar, routeKey,
       ) : null}
       {showSidebar ? <Sidebar /> : null}
       <div
-        className="min-h-[calc(100vh-4rem)] min-w-0 overflow-x-clip"
+        className={`${interviewSession ? 'min-h-0 h-[calc(100dvh-4rem)] overflow-hidden' : friendPage ? 'min-h-0 h-dvh overflow-hidden' : 'min-h-[calc(100vh-4rem)]'} min-w-0 overflow-x-clip`}
         style={{
           marginLeft: contentShift,
           transition: isDesktop ? 'margin-left 420ms cubic-bezier(0.22, 1, 0.36, 1)' : 'none',
@@ -330,7 +338,7 @@ function AppShellLayout({ user, logout, interviewSession, showSidebar, routeKey,
             {children}
           </Suspense>
         </RouteErrorBoundary>
-        {interviewSession ? null : <Footer />}
+        {interviewSession || friendPage ? null : <Footer />}
       </div>
     </div>
   );

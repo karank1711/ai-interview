@@ -9,6 +9,7 @@ import {
   InformationCircleIcon,
   EnvelopeIcon,
   ArrowRightIcon,
+  ChatBubbleLeftRightIcon,
 } from '@heroicons/react/24/outline';
 import AnimatedBrain from './AnimatedBrain';
 import RocketLaunch from './RocketLaunch';
@@ -17,6 +18,7 @@ import { useSidebar } from '../context/SidebarContext';
 const DESKTOP_NAV_ITEMS = [
   { name: 'Home', href: '/', icon: HomeIcon },
   { name: 'Interview', href: '/interview', icon: VideoCameraIcon },
+  { name: 'Interview Friend', href: '/interview-friend', icon: ChatBubbleLeftRightIcon },
   { name: 'Features', href: '/features', icon: SparklesIcon },
   { name: 'Results', href: '/progress', icon: ChartBarIcon },
   { name: 'Profile', href: '/profile', icon: UserCircleIcon },
@@ -28,6 +30,7 @@ const DESKTOP_NAV_ITEMS = [
 const MOBILE_NAV_ITEMS = [
   { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
   { name: 'Interview', href: '/interview', icon: VideoCameraIcon },
+  { name: 'Interview Friend', href: '/interview-friend', icon: ChatBubbleLeftRightIcon },
   { name: 'Features', href: '/features', icon: SparklesIcon },
   { name: 'Results', href: '/progress', icon: ChartBarIcon },
   { name: 'About', href: '/about', icon: InformationCircleIcon },
@@ -42,7 +45,11 @@ function isNavActive(pathname, item) {
   }
   if (item.name === 'Interview') {
     if (pathname.includes('/report')) return false;
+    if (pathname.startsWith('/interview-friend')) return false;
     return pathname === '/interview' || pathname.startsWith('/interview/');
+  }
+  if (item.name === 'Interview Friend') {
+    return pathname === '/interview-friend' || pathname.startsWith('/interview-friend/');
   }
   if (item.name === 'Results') {
     return (

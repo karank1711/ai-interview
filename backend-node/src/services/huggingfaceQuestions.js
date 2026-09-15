@@ -153,21 +153,28 @@ function sanitizeHfError(raw) {
     .replace(/bearer\s+\S+/gi, "Bearer [redacted]");
 }
 
+function throwHfHttpError(response, raw, fallbackMessage) {
+  const status = response.status === 429 ? 429 : response.status >= 500 ? 502 : response.status === 403 ? 403 : 400;
+  hfLog("error", { status: response.status, message: sanitizeHfError(raw) });
+  const error = new Error(
+    response.status === 429
+      ? fallbackMessage.busy
+      : response.status === 403
+        ? "Hugging Face token cannot call Inference Providers. Enable “Make calls to Inference Providers” on the existing backend HF_TOKEN."
+        : fallbackMessage.fail
+  );
+  error.statusCode = status === 403 ? 403 : status;
+  error.retryable = response.status === 400 || response.status === 404;
+  throw error;
+}
+
 async function parseHfResponse(response) {
   const raw = await response.text();
   if (!response.ok) {
-    const status = response.status === 429 ? 429 : response.status >= 500 ? 502 : response.status === 403 ? 403 : 400;
-    hfLog("error", { status: response.status, message: sanitizeHfError(raw) });
-    const error = new Error(
-      response.status === 429
-        ? "Question generation is busy. Please try again in a moment."
-        : response.status === 403
-          ? "Hugging Face token cannot call Inference Providers. Enable “Make calls to Inference Providers” on the existing backend HF_TOKEN."
-          : "Could not generate the next interview question."
-    );
-    error.statusCode = status === 403 ? 403 : status;
-    error.retryable = response.status === 400 || response.status === 404;
-    throw error;
+    throwHfHttpError(response, raw, {
+      busy: "Question generation is busy. Please try again in a moment.",
+      fail: "Could not generate the next interview question.",
+    });
   }
   let parsed;
   try {
@@ -188,10 +195,41 @@ async function parseHfResponse(response) {
   return question;
 }
 
-async function postChatCompletions(model, messages, signal) {
+async function parseHfChatResponse(response) {
+  const raw = await response.text();
+  if (!response.ok) {
+    throwHfHttpError(response, raw, {
+      busy: "Interview Friend is busy. Please try again in a moment.",
+      fail: "Interview Friend could not answer right now. Please try again.",
+    });
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    const error = new Error("Interview Friend could not answer right now. Please try again.");
+    error.statusCode = 502;
+    throw error;
+  }
+  const text = String(extractChatText(parsed) || "").trim();
+  if (!text) {
+    hfLog("error", { status: 502, message: "empty interview friend reply" });
+    const error = new Error("Interview Friend could not answer right now. Please try again.");
+    error.statusCode = 502;
+    throw error;
+  }
+  hfLog("friend reply generated", { chars: text.length });
+  return text.slice(0, 8000);
+}
+
+async function postChatCompletions(model, messages, signal, options = {}) {
+  const parse = options.parse || parseHfResponse;
+  const maxTokens = Number(options.maxTokens) > 0 ? Number(options.maxTokens) : 180;
+  const temperature = Number.isFinite(Number(options.temperature)) ? Number(options.temperature) : 0.7;
   hfLog("request started", {
     model,
     endpoint: "router.huggingface.co/v1/chat/completions",
+    maxTokens,
     ...tokenFingerprint(),
   });
   const response = await fetch(HF_CHAT_URL, {
@@ -203,12 +241,12 @@ async function postChatCompletions(model, messages, signal) {
     body: JSON.stringify({
       model,
       messages,
-      max_tokens: 180,
-      temperature: 0.7,
+      max_tokens: maxTokens,
+      temperature,
     }),
     signal,
   });
-  return parseHfResponse(response);
+  return parse(response);
 }
 
 async function callHuggingFaceInference(messages, signal) {
@@ -304,6 +342,43 @@ export async function generateInterviewQuestion({
     ],
     signal
   );
+}
+
+export async function completeHuggingFaceChat({
+  messages,
+  maxTokens = 700,
+  temperature = 0.45,
+  signal,
+} = {}) {
+  requireHfKey();
+  await probeHfAuth();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const onAbort = () => controller.abort();
+  signal?.addEventListener?.("abort", onAbort);
+  const routed = routedModelId();
+  const bare = env.huggingfaceQuestionModel;
+  const options = { parse: parseHfChatResponse, maxTokens, temperature };
+  try {
+    try {
+      return await postChatCompletions(routed, messages, controller.signal, options);
+    } catch (error) {
+      if (error?.name === "AbortError") throw error;
+      if (!error?.retryable || routed === bare) throw error;
+      hfLog("retry without provider suffix", { model: bare });
+      return await postChatCompletions(bare, messages, controller.signal, options);
+    }
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      const timeout = new Error("Interview Friend timed out. Please try again.");
+      timeout.statusCode = 504;
+      throw timeout;
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+    signal?.removeEventListener?.("abort", onAbort);
+  }
 }
 
 export function buildStoredQuestion({ questionText, course, level, type }) {

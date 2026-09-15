@@ -11,6 +11,7 @@ import {
   UserIcon,
   ChevronDownIcon,
   VideoCameraIcon,
+  ChatBubbleLeftRightIcon,
 } from '@heroicons/react/24/outline';
 import { useSidebar } from '../context/SidebarContext';
 import AnimatedBrain from './AnimatedBrain';
@@ -33,6 +34,7 @@ const Navbar = ({ user, logout, showSidebarToggle = false }) => {
   const desktopNavigation = [
     { name: 'Home', href: '/', icon: AcademicCapIcon },
     { name: 'Interview', href: '/interview', icon: VideoCameraIcon },
+    { name: 'Interview Friend', href: '/interview-friend', icon: ChatBubbleLeftRightIcon },
     { name: 'Features', href: '/features', icon: ChartBarIcon },
     { name: 'About', href: '/about', icon: UserCircleIcon },
     { name: 'Contact', href: '/contact', icon: UserIcon },
@@ -45,7 +47,11 @@ const Navbar = ({ user, logout, showSidebarToggle = false }) => {
     }
     if (item.name === 'Interview') {
       if (path.includes('/report')) return false;
+      if (path.startsWith('/interview-friend')) return false;
       return path === '/interview' || path.startsWith('/interview/');
+    }
+    if (item.name === 'Interview Friend') {
+      return path === '/interview-friend' || path.startsWith('/interview-friend/');
     }
     return path === item.href;
   };
@@ -87,7 +93,7 @@ const Navbar = ({ user, logout, showSidebarToggle = false }) => {
           </Link>
         </div>
 
-        <div className="hidden items-center justify-center gap-4 md:flex lg:gap-8">
+        <div className="hidden items-center justify-center gap-2 md:flex lg:gap-6">
           {desktopNavigation.map((item) => (
             <Link
               key={item.name}
@@ -97,7 +103,7 @@ const Navbar = ({ user, logout, showSidebarToggle = false }) => {
                   window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
                 }
               }}
-              className={`inline-flex items-center gap-2 border-b-2 py-1 text-sm font-medium leading-none transition-colors ${
+              className={`inline-flex items-center gap-1.5 whitespace-nowrap border-b-2 py-1 text-sm font-medium leading-none transition-colors ${
                 isNavItemActive(item)
                   ? 'border-purple-600 text-purple-600 dark:text-purple-400'
                   : 'border-transparent text-gray-700 hover:text-purple-600 dark:text-gray-300 dark:hover:text-purple-400'
@@ -207,6 +213,13 @@ const Navbar = ({ user, logout, showSidebarToggle = false }) => {
                     onClick={() => setIsOpen(false)}
                   >
                     Dashboard
+                  </Link>
+                  <Link
+                    to="/interview-friend"
+                    className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Interview Friend
                   </Link>
                   <Link
                     to="/profile"

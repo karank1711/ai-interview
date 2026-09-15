@@ -20,6 +20,12 @@ const ICON_SETS = {
     { id: 'gear', className: 'hero-float-c left-6 bottom-7', color: '#8b5cf6', path: 'M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8z M12 4v2 M12 18v2 M4 12h2 M18 12h2' },
     { id: 'target', className: 'hero-float-a right-2 bottom-9', color: '#06b6d4', path: 'M12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 3a2 2 0 1 0 0 4 2 2 0 0 0 0-4z' },
   ],
+  friend: [
+    { id: 'mic', className: 'hero-float-a left-2 top-3', color: '#3b82f6', path: 'M12 5a3 3 0 0 1 3 3v4a3 3 0 0 1-6 0V8a3 3 0 0 1 3-3zm-5 7a5 5 0 0 0 10 0 M12 17v3' },
+    { id: 'spark', className: 'hero-float-b right-3 top-2', color: '#8b5cf6', path: 'M12 5l1.2 3.8H17l-3.1 2.3 1.2 3.8L12 12.6 8.9 14.9l1.2-3.8L7 8.8h3.8z' },
+    { id: 'chat', className: 'hero-float-c left-8 bottom-8', color: '#22c55e', path: 'M7 8h10v6H9l-2 2V8z' },
+    { id: 'bolt', className: 'hero-float-a right-2 bottom-10', color: '#06b6d4', path: 'M13 5L7 13h5l-1 6 6-8h-5l1-6z' },
+  ],
 };
 
 function FloatingIcon({ item }) {
@@ -71,8 +77,17 @@ export default function HeroRobotBanner({
   subtitle,
   variant = 'about',
   extra,
+  badgeTone = 'violet',
 }) {
   const icons = ICON_SETS[variant] || ICON_SETS.about;
+  const badgeClass =
+    badgeTone === 'rose'
+      ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-200'
+      : badgeTone === 'amber'
+        ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200'
+        : badgeTone === 'sky'
+          ? 'bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-200'
+          : 'bg-white/80 text-violet-700 dark:bg-slate-700 dark:text-violet-300';
   return (
     <section className="relative mb-10 overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-50 via-sky-50 to-violet-100 px-4 py-6 dark:from-[#121a2e] dark:via-indigo-950 dark:to-[#0b1224] sm:px-8 sm:py-10">
       <div className="pointer-events-none absolute -right-10 top-0 h-40 w-40 rounded-full bg-violet-200/50 blur-3xl" />
@@ -80,7 +95,7 @@ export default function HeroRobotBanner({
       <div className="relative grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_auto]">
         <div className="min-w-0">
           {badge ? (
-            <span className="mb-3 inline-flex rounded-full bg-white/80 px-3 py-1 text-xs font-semibold text-violet-700 dark:bg-slate-700 dark:text-violet-300">
+            <span className={`mb-3 inline-flex rounded-full px-3 py-1 text-xs font-semibold ${badgeClass}`}>
               {badge}
             </span>
           ) : null}

@@ -26,6 +26,11 @@ export const env = {
   contactToEmail: process.env.CONTACT_TO_EMAIL || "karank47417@gmail.com",
   geminiApiKey: process.env.GEMINI_API_KEY,
   groqApiKey: (process.env.GROQ_API_KEY || "").trim(),
+  sarvamApiKey: (
+    process.env.SARVAM_API_KEY ||
+    process.env.SARVAM_API_SUBSCRIPTION_KEY ||
+    ""
+  ).trim(),
   huggingfaceApiKey: (
     process.env.HF_TOKEN ||
     process.env.HUGGINGFACE_API_KEY ||
@@ -51,7 +56,13 @@ export const env = {
   interviewQuestionCount: Math.max(1, Math.min(10, Number(process.env.INTERVIEW_QUESTION_COUNT || 5) || 5)),
   livekitUrl: process.env.LIVEKIT_URL || "",
   livekitApiKey: process.env.LIVEKIT_API_KEY || "",
-  livekitApiSecret: process.env.LIVEKIT_API_SECRET || ""
+  livekitApiSecret: process.env.LIVEKIT_API_SECRET || "",
+  youtubeApiKey: (
+    process.env.YOUTUBE_API_KEY ||
+    process.env.YOUTUBE_DATA_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    ""
+  ).trim(),
 };
 
 export function validateEnv() {
