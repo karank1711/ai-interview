@@ -44,7 +44,7 @@ function normalizeIntentText(message) {
 
 const PLAYLIST_KIND_RE =
   /\b(playlist|full course|complete course|complete playlist|puri playlist|poori playlist|series)\b/i;
-const CHANNEL_KIND_RE = /\b(channels?|best channels)\b/i;
+const CHANNEL_KIND_RE = /\b(best channels?|channels to follow|recommend(?:ed)? channels?|channel recommendations?|which channels?)\b/i;
 const VIDEO_KIND_RE = /\b(videos?|clips?)\b/i;
 const COURSE_KIND_RE = /\b(tutorials?|courses?|resources?)\b/i;
 
@@ -86,7 +86,9 @@ export function detectVideoSearchIntent(message) {
 
 function detectResourceKind(lower) {
   if (PLAYLIST_KIND_RE.test(lower)) return "playlist";
-  if (CHANNEL_KIND_RE.test(lower)) return "channel";
+  const wantsChannelList = CHANNEL_KIND_RE.test(lower) || (/\bchannels?\b/i.test(lower) && /\b(best|follow|subscribe|recommend)\b/i.test(lower));
+  const wantsWatchable = /\b(explain|concept|watch|play|video|videos|tutorial|clip|via youtube)\b/i.test(lower);
+  if (wantsChannelList && !wantsWatchable) return "channel";
   if (VIDEO_KIND_RE.test(lower)) return "video";
   if (COURSE_KIND_RE.test(lower)) {
     if (/\b(complete|full|beginner se advanced|beginner to advanced)\b/i.test(lower)) return "playlist";
@@ -164,9 +166,10 @@ const FILLER_WORDS = new Set([
   "a", "an", "the", "me", "my", "your", "our", "some", "any", "one", "good",
   "best", "nice", "related", "regarding", "about", "around", "for", "on", "to",
   "with", "from", "of", "in", "and", "or", "this", "that", "these", "those", "it",
-  "its", "topic", "subject", "thing", "one", "suggest", "suggested", "suggestion",
+  "its", "topic", "subject", "thing", "suggest", "suggested", "suggestion",
   "recommend", "recommended", "recommendation", "recommendations", "want", "need",
-  "like", "would", "could", "should", "can", "you", "regarding",
+  "like", "would", "could", "should", "can", "you", "via", "explain", "explained",
+  "concept", "concepts", "youtube", "channel", "channels",
 ]);
 
 const GENERIC_TOPIC_RE =
@@ -179,6 +182,15 @@ export function isGenericResourceTopic(topic) {
   if (/^(this|that|the|same)\s+(topic|one|subject|thing)$/.test(t)) return true;
   if (/^(latest|popular|trending)\s+(tech|programming|coding|youtube)?(\s+videos?)?$/.test(t)) return true;
   return false;
+}
+
+function normalizeKnownTopicTypos(topic, message = "") {
+  let next = String(topic || "").replace(/\s+/g, " ").trim();
+  const hay = `${message} ${next}`;
+  if (/\b(javascript|js)\b/i.test(hay) && /\bhosting\b/i.test(next)) {
+    next = next.replace(/\bhosting\b/gi, "hoisting");
+  }
+  return next;
 }
 
 export function isReferentialResourceRequest(message) {
@@ -252,10 +264,10 @@ export function extractResourceTopic(message) {
     .map((token) => token.trim())
     .filter((token) => token && !FILLER_WORDS.has(token) && token.length > 1 && !/^\d+$/.test(token));
 
-  const topic = [...kept, ...leftovers]
+  const topic = normalizeKnownTopicTypos([...kept, ...leftovers]
     .join(" ")
     .replace(/\s+/g, " ")
-    .trim();
+    .trim(), message);
 
   const uncertain = !topic || isGenericResourceTopic(topic);
   return {
@@ -272,7 +284,7 @@ export function buildYoutubeQuery(message, kind = "video") {
 }
 
 export function composeYoutubeQuery(topic, extracted = {}, kind = "video") {
-  const clean = String(topic || "").replace(/\s+/g, " ").trim();
+  const clean = normalizeKnownTopicTypos(String(topic || "").replace(/\s+/g, " ").trim());
   if (!clean || isGenericResourceTopic(clean)) return "";
   const language = extracted.language || "";
   const langLabel = LANGUAGE_HINTS.find((item) => item.key === language)?.labels[0] || "";

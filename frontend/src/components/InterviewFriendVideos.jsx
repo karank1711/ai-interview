@@ -116,13 +116,14 @@ export default function InterviewFriendVideos({
         <div className="flex min-w-0 max-w-full justify-start">
           <div className="w-full max-w-[min(100%,18rem)] overflow-hidden rounded-xl border border-slate-200 bg-black dark:border-slate-600 sm:max-w-[20rem]">
             <div className="relative aspect-video w-full">
-              <iframe
-                title={active.title}
-                src={active.embedUrl}
-                className="absolute inset-0 h-full w-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-              />
+            <iframe
+              key={active.videoId || active.playlistId}
+              title={active.title}
+              src={active.embedUrl}
+              className="absolute inset-0 h-full w-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
             </div>
           </div>
         </div>

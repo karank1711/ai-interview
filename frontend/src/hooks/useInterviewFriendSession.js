@@ -291,6 +291,7 @@ export function useInterviewFriendSession(user) {
       const grown = growTranscript(displayedTranscriptRef.current, next);
       if (grown === displayedTranscriptRef.current) return;
       displayedTranscriptRef.current = grown;
+      setCurrentAnswer(grown);
     };
 
     try {
@@ -409,7 +410,7 @@ export function useInterviewFriendSession(user) {
       }
       lastSpeechRef.current = spoken;
       displayedTranscriptRef.current = '';
-      setCurrentAnswer(displayAnswer);
+      setCurrentAnswer('');
       setPlaybackId(requestId);
       setIsVideoPlaying(false);
       const nextVideos = Array.isArray(data?.videos) ? data.videos.slice(0, 3) : [];
@@ -418,7 +419,8 @@ export function useInterviewFriendSession(user) {
         setVideos(nextVideos);
         setVideosExhausted(false);
         lastVideoRef.current = nextVideos[0];
-        setActiveVideoId(nextVideos[0].videoId || '');
+        const playable = nextVideos.find((item) => item.embedUrl) || nextVideos[0];
+        setActiveVideoId(playable.videoId || '');
         excludeIdsRef.current = [...excludeIdsRef.current, ...nextVideos.map((item) => item.videoId).filter(Boolean)].slice(-40);
       } else if (data?.videosExhausted) {
         videosRef.current = [];
@@ -428,7 +430,7 @@ export function useInterviewFriendSession(user) {
       const videosToSave = nextVideos.length ? nextVideos : videosRef.current;
       setMessages((current) => {
         const next = current.map((item) => (
-          item.id === assistantId ? { ...item, content: displayAnswer } : item
+          item.id === assistantId ? { ...item, content: '' } : item
         ));
         persistNow(next, videosToSave);
         return next;
@@ -442,6 +444,18 @@ export function useInterviewFriendSession(user) {
         resumeRecognitionAfterAi();
       };
 
+      const finalizeAnswer = (textToShow) => {
+        const finalText = String(textToShow || displayAnswer || spoken || '').trim();
+        setCurrentAnswer(finalText);
+        setMessages((current) => {
+          const next = current.map((item) => (
+            item.id === assistantId ? { ...item, content: finalText } : item
+          ));
+          persistNow(next, videosToSave);
+          return next;
+        });
+      };
+
       await playAnswerSpeech(
         spoken,
         data?.speechChunks,
@@ -450,11 +464,8 @@ export function useInterviewFriendSession(user) {
           if (ttsFailed) {
             setAudioError(true);
             setIsVideoPlaying(false);
-            setCurrentAnswer(displayAnswer);
           }
-          setMessages((current) => current.map((item) => (
-            item.id === assistantId ? { ...item, content: displayAnswer } : item
-          )));
+          finalizeAnswer(displayAnswer || spoken);
           finishReady();
         }
       );
