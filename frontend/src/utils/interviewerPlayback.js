@@ -12,10 +12,7 @@ function bumpPlayGeneration() {
   return playGeneration;
 }
 
-function voiceLog(message, extra) {
-  if (extra !== undefined) console.log('[AI-VOICE]', message, extra);
-  else console.log('[AI-VOICE]', message);
-}
+function voiceLog() {}
 
 function describeAudioElement(el) {
   if (!el) return { present: false };

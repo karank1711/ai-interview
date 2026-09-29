@@ -478,7 +478,7 @@ const InterviewFriend = ({ user, logout }) => {
 
           <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden p-2 sm:p-3">
           <section className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-white/15 dark:bg-[#0b1224]">
-            <div className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 px-3 py-2 dark:border-white/10">
+            <div className={`flex shrink-0 items-center justify-between gap-2 border-b border-slate-100 px-3 py-2 dark:border-white/10 ${desktopHidden && simpleChat ? 'lg:pl-14' : ''}`}>
               <div className="flex min-w-0 items-center gap-2">
                 <button
                   type="button"

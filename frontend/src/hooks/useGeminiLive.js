@@ -212,7 +212,6 @@ export function useGeminiLive({
     if (interviewerSpeakingRef.current) return;
     turn.finished = true;
     mediaLog('AUDIO', 'interviewer playback stopped', { turnId: turn.id });
-    console.log('[AI-VOICE] playback end', { turnId: turn.id, kind: turn.kind });
     notifySpeaking(false, { turnComplete: true, kind: turn.kind, turnId: turn.id });
   }, [notifySpeaking]);
 
@@ -221,7 +220,6 @@ export function useGeminiLive({
     interviewerSpeakingRef.current = true;
     if (!turn.started) {
       turn.started = true;
-      console.log('[AI-VOICE] playback start', { turnId: turn.id, kind: turn.kind });
       mediaLog('AUDIO', 'interviewer playback started', { turnId: turn.id, kind: turn.kind });
       revealAiTranscript(turn);
       notifySpeaking(true, { kind: turn.kind, audioStarted: true, turnId: turn.id });
@@ -471,7 +469,6 @@ export function useGeminiLive({
     const questionText = String(options.questionText || '').trim();
     const spokenText = String(text || '').trim();
     if (!options.force && kind === 'question' && questionText && questionText === lastQuestionTextRef.current) {
-      console.log('[AI-VOICE] skip duplicate question', { chars: questionText.length });
       mediaLog('GEMINI-LIVE', 'skip duplicate question');
       return;
     }
@@ -487,7 +484,6 @@ export function useGeminiLive({
     });
     await previous;
     try {
-      console.log('[AI-VOICE] generate', { kind, chars: spokenText.length, questionChars: questionText.length, force: Boolean(options.force) });
       ttsAbortRef.current?.abort();
       const controller = new AbortController();
       ttsAbortRef.current = controller;
@@ -520,7 +516,6 @@ export function useGeminiLive({
         return;
       }
       audioStateRef.current = 'loading';
-      console.log('[AI-VOICE] tts request started', { kind });
       const payload = kind === 'closing' && options.recap
         ? { kind, recap: options.recap }
         : { text: spokenText, kind };
