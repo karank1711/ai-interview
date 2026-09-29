@@ -163,7 +163,7 @@ const InterviewRoom = ({ user }) => {
   const location = useLocation();
   const { showPopup } = usePopup();
   const isSessionRoute = location.pathname.endsWith('/session');
-
+  
   const [interview, setInterview] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [plannedQuestionCount, setPlannedQuestionCount] = useState(5);
@@ -543,12 +543,12 @@ const InterviewRoom = ({ user }) => {
         const plannedDomain = Number(data?.plannedQuestionCount) > 0 ? Number(data.plannedQuestionCount) : 5;
         plannedCountRef.current = plannedDomain + 1;
         setPlannedQuestionCount(plannedDomain + 1);
-        setLoading(false);
-      } catch (error) {
-        console.error('Failed to fetch interview data:', error);
-        navigate('/dashboard');
-      }
-    };
+      setLoading(false);
+    } catch (error) {
+      console.error('Failed to fetch interview data:', error);
+      navigate('/dashboard');
+    }
+  };
     load();
     const cached = getCachedInterviewMedia(id);
     if (cached.video || cached.audio) applyMediaStreams(cached.video, cached.audio);
@@ -595,7 +595,7 @@ const InterviewRoom = ({ user }) => {
       resetInterviewerVideo();
       try {
         await geminiRef.current.sendLine(`Hello, ${candidateFirstName(user)}.`, { kind: 'greeting' });
-      } catch (error) {
+    } catch (error) {
         console.error('[AI-VOICE] greeting failed', error);
       }
       if (endingRef.current) return;
@@ -649,7 +649,7 @@ const InterviewRoom = ({ user }) => {
     warningSpokenRef.current = true;
     try {
       await geminiRef.current.sendSpokenMessage(spoken);
-    } catch (error) {
+      } catch (error) {
       console.error('[GEMINI] Device warning failed', error);
     }
   }, [pauseInterviewerVideo]);
@@ -937,7 +937,7 @@ const InterviewRoom = ({ user }) => {
     }
     try {
       await saveCurrentAnswer();
-    } catch (error) {
+  } catch (error) {
       console.error('[ANSWER] Could not save skipped answer', error);
     }
     try {
@@ -1269,7 +1269,7 @@ const InterviewRoom = ({ user }) => {
           console.error('[MIC] Could not capture microphone audio.', error);
           holdFnRef.current();
         });
-      } else {
+    } else {
         holdFnRef.current();
       }
       return undefined;
@@ -1422,7 +1422,7 @@ const InterviewRoom = ({ user }) => {
       geminiRef.current.stopListening({ detach: true });
       audioStream?.getTracks?.().forEach((track) => track.stop());
       audioStreamRef.current = null;
-      setAudioStream(null);
+        setAudioStream(null);
       setIsAudioEnabled(false);
       cacheInterviewMedia(id, videoStreamRef.current, null);
       if (liveReadyRef.current) holdFnRef.current();
@@ -1708,29 +1708,29 @@ const InterviewRoom = ({ user }) => {
                     <MicrophoneIcon className="h-5 w-5" />
                   </span>
                   <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Microphone</span>
-                </button>
-              </div>
+                    </button>
+                  </div>
 
-              <div className="mt-6 text-center">
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                  Ready to start your interview?
-                </h3>
+                <div className="mt-6 text-center">
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                    Ready to start your interview?
+                  </h3>
                 <p className="text-gray-600 dark:text-gray-400 mb-2">
-                  Make sure your camera and microphone are working properly before you begin.
-                </p>
+                    Make sure your camera and microphone are working properly before you begin.
+                  </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
                   Camera: {cameraReady ? 'on' : 'off'} · Microphone: {micReady ? 'on' : 'off'}
                 </p>
                 {statusMessage && <p className="text-sm text-red-600 dark:text-red-400 mb-4">{statusMessage}</p>}
-                <button
+                  <button
                   type="button"
-                  onClick={handleStartInterview}
+                    onClick={handleStartInterview}
                   disabled={!canStart || starting}
                   className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-medium rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all transform hover:scale-105 disabled:opacity-50 disabled:transform-none"
-                >
+                  >
                   {starting ? 'Starting...' : 'Start Interview'}
-                </button>
-              </div>
+                  </button>
+                </div>
             </div>
 
             <div className="lg:col-span-1">
@@ -1746,25 +1746,25 @@ const InterviewRoom = ({ user }) => {
                   <p className="text-white text-center text-sm mt-2">AI Assistant</p>
                 </div>
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-3 mb-6">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    I'm here to help you practice your interview skills. Take your time to answer each question thoughtfully.
-                  </p>
-                </div>
-                <h4 className="font-medium text-gray-900 dark:text-white mb-3">Tips</h4>
-                <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                  <li className="flex items-start">
-                    <CheckCircleIcon className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                    <span>Be specific and provide examples</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircleIcon className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                    <span>Use the STAR method for behavioral questions</span>
-                  </li>
-                  <li className="flex items-start">
-                    <CheckCircleIcon className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                    <span>Stay calm and confident</span>
-                  </li>
-                </ul>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      I'm here to help you practice your interview skills. Take your time to answer each question thoughtfully.
+                    </p>
+                  </div>
+                  <h4 className="font-medium text-gray-900 dark:text-white mb-3">Tips</h4>
+                  <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                    <li className="flex items-start">
+                      <CheckCircleIcon className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <span>Be specific and provide examples</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircleIcon className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <span>Use the STAR method for behavioral questions</span>
+                    </li>
+                    <li className="flex items-start">
+                      <CheckCircleIcon className="w-4 h-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                      <span>Stay calm and confident</span>
+                    </li>
+                  </ul>
               </div>
             </div>
           </div>
