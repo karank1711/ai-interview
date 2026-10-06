@@ -1,0 +1,38 @@
+[
+  {
+    "title": "Interview Friend",
+    "source": "InterviewIQ product",
+    "category": "product",
+    "url": "",
+    "content": "Interview Friend is InterviewIQ's conversational practice companion. It answers general and technical questions, keeps the recent conversation, and can attach YouTube videos or playlists when the learner asks for one. Voice replies use the existing Groq text-to-speech path.",
+    "updatedAt": "2026-10-06T15:43:34.700Z",
+    "chunk": 1
+  },
+  {
+    "title": "Interview session face cues",
+    "source": "InterviewIQ product",
+    "category": "product",
+    "url": "",
+    "content": "During a live InterviewIQ interview, the camera can provide visual cues such as whether a face is visible and a simple expression label. Those cues support the interview experience. Interview Friend chat does not run that camera analysis.",
+    "updatedAt": "2026-10-06T15:43:34.700Z",
+    "chunk": 1
+  },
+  {
+    "title": "Interview reports",
+    "source": "InterviewIQ product",
+    "category": "product",
+    "url": "",
+    "content": "InterviewIQ can save an interview report with overall, technical, communication, and confidence scores plus strengths and improvements. Interview Friend can coach from the latest saved report only when the learner asks to analyze their last interview.",
+    "updatedAt": "2026-10-06T15:43:34.700Z",
+    "chunk": 1
+  },
+  {
+    "title": "Conversation continuity",
+    "source": "InterviewIQ product",
+    "category": "product",
+    "url": "",
+    "content": "Interview Friend stores each signed-in learner's conversations in the existing interview_friend_conversations table. Follow-up messages such as a lecture number or explain it are resolved from that recent conversation before a new answer is generated.",
+    "updatedAt": "2026-10-06T15:43:34.700Z",
+    "chunk": 1
+  }
+]

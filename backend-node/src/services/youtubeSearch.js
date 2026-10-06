@@ -376,9 +376,9 @@ function scoreVideo(video, { query, language, difficulty }) {
   return score;
 }
 
-function pickTop(videos, hints, { excludeIds = [], limit = 3 } = {}) {
+function pickTop(videos, hints, { excludeIds = [], limit = 3, maxCap = 3 } = {}) {
   const blocked = new Set((excludeIds || []).map((id) => String(id)));
-  const cap = Math.min(3, Math.max(1, Number(limit) || 3));
+  const cap = Math.min(maxCap, Math.max(1, Number(limit) || 3));
   return (videos || [])
     .map(normalizeVideo)
     .filter(Boolean)
@@ -536,6 +536,7 @@ export async function searchYoutubeVideos({
   difficulty,
   excludeIds = [],
   limit = 3,
+  maxCap = 3,
   kind = "video",
   signal,
 } = {}) {
@@ -557,7 +558,7 @@ export async function searchYoutubeVideos({
       results = await searchViaYoutubeResults(q, controller.signal, kind);
       results = results.filter((item) => item.kind === kind);
     }
-    const picked = pickTop(results, { query: scoreQuery, language, difficulty }, { excludeIds, limit });
+    const picked = pickTop(results, { query: scoreQuery, language, difficulty }, { excludeIds, limit, maxCap });
     return picked.map((item) => ({
       ...item,
       reason: resourceReason(item, { query: scoreQuery, language, kind }),

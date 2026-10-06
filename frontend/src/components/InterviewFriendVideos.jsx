@@ -8,7 +8,7 @@ export default function InterviewFriendVideos({
   showPlayer = true,
 }) {
   const list = Array.isArray(videos)
-    ? videos.filter((item) => (item?.videoId || item?.playlistId) && item?.title).slice(0, 3)
+    ? videos.filter((item) => item?.title && (item?.videoId || item?.playlistId || (item?.kind === 'link' && item?.url))).slice(0, 3)
     : [];
 
   if (loading) {
@@ -39,7 +39,23 @@ export default function InterviewFriendVideos({
       ) : null}
       <div className={compact ? 'space-y-2' : `grid grid-cols-1 gap-3 ${list.length > 1 ? 'sm:grid-cols-3' : ''}`}>
         {list.map((video) => (
-          compact ? (
+          video.kind === 'link' && video.url ? (
+            <a
+              key={video.videoId || video.url}
+              href={video.url}
+              target="_blank"
+              rel="noreferrer"
+              className="block overflow-hidden rounded-xl border border-slate-200 bg-slate-50 text-left hover:border-violet-300 dark:border-slate-600 dark:bg-slate-900"
+            >
+              <div className="p-3">
+                <p className="line-clamp-2 text-xs font-semibold text-slate-900 dark:text-white">{video.title}</p>
+                {video.channel ? (
+                  <p className="mt-1 truncate text-[11px] text-slate-500 dark:text-slate-400">{video.channel}</p>
+                ) : null}
+                <p className="mt-2 text-[11px] font-medium text-violet-600">Open link</p>
+              </div>
+            </a>
+          ) : compact ? (
             <div
               key={video.videoId || video.playlistId}
               className={`flex items-center gap-3 rounded-xl border bg-white/80 p-2 dark:bg-slate-900/80 ${
@@ -57,6 +73,16 @@ export default function InterviewFriendVideos({
                   {[video.channel, video.itemCount ? `${video.itemCount} videos` : ''].filter(Boolean).join(' · ')}
                 </p>
               </div>
+              {video.kind === 'link' && video.url ? (
+                <a
+                  href={video.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-9 shrink-0 items-center gap-1 rounded-full bg-violet-600 px-3 text-xs font-semibold text-white"
+                >
+                  Open
+                </a>
+              ) : (
               <button
                 type="button"
                 onClick={() => onSelect?.(video)}
@@ -64,6 +90,7 @@ export default function InterviewFriendVideos({
               >
                 Play
               </button>
+              )}
             </div>
           ) : (
           <button

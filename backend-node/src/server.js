@@ -89,24 +89,24 @@ app.use((error, req, res, next) => {
 async function start() {
   validateEnv();
 
-  if (env.hasGoogleOAuthCredentials) {
-    console.log(
-      "Google OAuth credentials are loaded in backend env. Enable Google in Supabase Dashboard → Authentication → Providers → Google. Do not add GOOGLE_CLIENT_SECRET to the frontend."
-    );
-  }
+  // if (env.hasGoogleOAuthCredentials) {
+  //   console.log(
+  //     "Google OAuth credentials are loaded in backend env. Enable Google in Supabase Dashboard → Authentication → Providers → Google. Do not add GOOGLE_CLIENT_SECRET to the frontend."
+  //   );
+  // }
 
-  console.log(
-    `CORS: FRONTEND_URLS count=${env.frontendOrigins.length}, CORS_ALLOW_VERCEL_APP=${env.corsAllowVercelApp}`
-  );
-  console.log(
-    `Resend: keyLoaded=${Boolean(env.resendApiKey)} from=${env.resendFromEmail} to=${env.contactToEmail}`
-  );
+  // console.log(
+  //   `CORS: FRONTEND_URLS count=${env.frontendOrigins.length}, CORS_ALLOW_VERCEL_APP=${env.corsAllowVercelApp}`
+  // );
+  // console.log(
+  //   `Resend: keyLoaded=${Boolean(env.resendApiKey)} from=${env.resendFromEmail} to=${env.contactToEmail}`
+  // );
 
-  console.log(`Groq TTS: configured=${Boolean(env.groqApiKey)}`);
-  console.log(`Hindi TTS (Sarvam): configured=${Boolean(env.sarvamApiKey)}`);
-  console.log(
-    `Hugging Face questions: configured=${Boolean(env.huggingfaceApiKey)} model=${env.huggingfaceQuestionModel} provider=${env.huggingfaceInferenceProvider}`
-  );
+  // console.log(`Groq TTS: configured=${Boolean(env.groqApiKey)}`);
+  // console.log(`Hindi TTS (Sarvam): configured=${Boolean(env.sarvamApiKey)}`);
+  // console.log(
+  //   `Hugging Face questions: configured=${Boolean(env.huggingfaceApiKey)} model=${env.huggingfaceQuestionModel} provider=${env.huggingfaceInferenceProvider}`
+  // );
   app.listen(env.port, () => {
     console.log(`Backend listening on http://localhost:${env.port}`);
    });
