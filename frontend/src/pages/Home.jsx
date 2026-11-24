@@ -129,12 +129,12 @@ const Home = ({ user }) => {
         <div className="mx-auto max-w-7xl min-w-0">
           <div className="relative isolate aspect-[16/10] min-h-[12.5rem] w-full overflow-hidden rounded-2xl bg-slate-950 shadow-xl sm:min-h-0 sm:rounded-3xl md:aspect-[16/9]">
             <HeroSlideshow showControls objectFit="contain" onIndexChange={setHeroSlideIndex} />
-            <div className="pointer-events-none absolute inset-0 hidden bg-gradient-to-r from-slate-950/70 via-slate-950/25 to-transparent sm:block" />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-slate-950/80 via-slate-950/35 to-transparent sm:from-slate-950/70 sm:via-slate-950/25" />
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
-              className="pointer-events-none relative z-10 hidden h-full w-full min-w-0 max-w-2xl flex-col justify-center space-y-6 px-8 py-8 sm:flex md:px-20 md:py-14 lg:px-24"
+              className="pointer-events-none relative z-10 flex h-full w-full min-w-0 max-w-2xl flex-col justify-center space-y-4 overflow-visible px-5 py-5 sm:space-y-6 sm:px-8 sm:py-8 md:px-20 md:py-14 lg:px-24"
             >
               <div className="min-w-0 space-y-2 sm:space-y-4">
                 <div className="hidden items-center rounded-full bg-white/15 px-3 py-1.5 backdrop-blur-sm sm:inline-flex sm:px-4 sm:py-2">
@@ -148,11 +148,11 @@ const Home = ({ user }) => {
                   as="h1"
                   key={heroSlideIndex}
                   replayKey={heroSlideIndex}
-                  className="break-words text-[clamp(1.15rem,5.4vw,3.75rem)] font-bold leading-tight"
+                  className="overflow-visible ps-[0.15em] text-[clamp(1.15rem,5.4vw,3.75rem)] font-bold leading-tight text-[#FFFFFF]"
                   text={"Your Dream Job\nis Closer Than You Think"}
                   lineClassNames={[
-                    'bg-[linear-gradient(90deg,#38BDF8_0%,#8B5CF6_50%,#E879F9_100%)] bg-clip-text text-transparent',
-                    'bg-[linear-gradient(90deg,#38BDF8_0%,#8B5CF6_50%,#E879F9_100%)] bg-clip-text text-transparent',
+                    'text-[#FFFFFF]',
+                    'text-[#FFFFFF]',
                   ]}
                 />
 
@@ -161,7 +161,7 @@ const Home = ({ user }) => {
                 </p>
               </div>
 
-              <div className="pointer-events-auto flex flex-col gap-3 sm:flex-row sm:gap-4">
+              <div className="pointer-events-auto hidden flex-col gap-3 sm:flex sm:flex-row sm:gap-4">
                 <HeroCtas user={user} />
               </div>
 
@@ -181,18 +181,7 @@ const Home = ({ user }) => {
             </motion.div>
           </div>
           <div className="min-w-0 pt-4 sm:hidden">
-            <h1 className="break-words text-[clamp(1.25rem,6.5vw,1.75rem)] font-bold leading-tight">
-              <span className="block bg-[linear-gradient(90deg,#38BDF8_0%,#8B5CF6_50%,#E879F9_100%)] bg-clip-text text-transparent">
-                Your Dream Job
-              </span>
-              <span className="block bg-[linear-gradient(90deg,#38BDF8_0%,#8B5CF6_50%,#E879F9_100%)] bg-clip-text text-transparent">
-                is Closer Than
-              </span>
-              <span className="block bg-[linear-gradient(90deg,#38BDF8_0%,#8B5CF6_50%,#E879F9_100%)] bg-clip-text text-transparent">
-                You Think
-              </span>
-            </h1>
-            <div className="mt-4 flex flex-col gap-3">
+            <div className="flex flex-col gap-3">
               <HeroCtas user={user} variant="page" />
             </div>
           </div>

@@ -26,14 +26,17 @@ export default function AnimatedText({
       const chars = Array.from(line);
       const lineClass = lineClassNames[lineIndex] || '';
       return (
-        <span key={`line-${lineIndex}`} className="block break-words">
+        <span
+          key={`line-${lineIndex}`}
+          className={`block overflow-visible whitespace-pre-wrap [overflow-wrap:normal] [word-break:normal] ${lineClass}`.trim()}
+        >
           {chars.map((char, charInLine) => {
             const index = charIndex;
             charIndex += 1;
             return (
               <motion.span
                 key={`${replayKey ?? 'reveal'}-${lineIndex}-${charInLine}`}
-                className={`inline will-change-[opacity,transform] ${lineClass}`.trim()}
+                className="inline overflow-visible will-change-[opacity,transform]"
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{

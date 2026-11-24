@@ -1,17 +1,70 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
 export const HERO_SLIDES = [
-  '/hero-slides/banner-1.png',
-  '/hero-slides/banner-2.png',
-  '/hero-slides/banner-3.png',
-  '/hero-slides/banner-4.png',
-  '/hero-slides/banner-5.png',
-  '/hero-slides/banner-6.png',
+  {
+    png: '/hero-slides/banner-1.png',
+    webp: '/hero-slides/banner-1.webp',
+    avif: '/hero-slides/banner-1.avif',
+  },
+  {
+    png: '/hero-slides/banner-2.png',
+    webp: '/hero-slides/banner-2.webp',
+    avif: '/hero-slides/banner-2.avif',
+  },
+  {
+    png: '/hero-slides/banner-3.png',
+    webp: '/hero-slides/banner-3.webp',
+    avif: '/hero-slides/banner-3.avif',
+  },
+  {
+    png: '/hero-slides/banner-4.png',
+    webp: '/hero-slides/banner-4.webp',
+    avif: '/hero-slides/banner-4.avif',
+  },
+  {
+    png: '/hero-slides/banner-5.png',
+    webp: '/hero-slides/banner-5.webp',
+    avif: '/hero-slides/banner-5.avif',
+  },
+  {
+    png: '/hero-slides/banner-6.png',
+    webp: '/hero-slides/banner-6.webp',
+    avif: '/hero-slides/banner-6.avif',
+  },
 ];
 
+export const HERO_SLIDE_WIDTH = 1280;
+export const HERO_SLIDE_HEIGHT = 720;
+
 const FADE_TRANSITION = { duration: 1.15, ease: [0.4, 0, 0.2, 1] };
+
+function normalizeSlide(slide) {
+  if (typeof slide === 'string') {
+    return { png: slide, webp: '', avif: '' };
+  }
+  return {
+    png: slide?.png || '',
+    webp: slide?.webp || '',
+    avif: slide?.avif || '',
+  };
+}
+
+function slideKey(slide, slideIndex) {
+  return `${slide.png || slide.webp || slide.avif || 'slide'}-${slideIndex}`;
+}
+
+function preferredSrc(slide) {
+  return slide?.avif || slide?.webp || slide?.png || '';
+}
+
+function preloadImage(url) {
+  if (!url || typeof window === 'undefined') return;
+  const image = new Image();
+  image.decoding = 'async';
+  image.src = url;
+}
 
 function HeroSlideshow({
   slides = HERO_SLIDES,
@@ -20,8 +73,13 @@ function HeroSlideshow({
   objectFit = 'cover',
   onIndexChange,
 }) {
+  const normalizedSlides = useMemo(
+    () => (Array.isArray(slides) ? slides.map(normalizeSlide).filter((slide) => preferredSrc(slide)) : []),
+    [slides]
+  );
   const [index, setIndex] = useState(0);
-  const count = slides.length || 1;
+  const [readyIndexes, setReadyIndexes] = useState(() => new Set([0]));
+  const count = normalizedSlides.length || 1;
   const fitClass = objectFit === 'contain' ? 'object-contain' : 'object-cover';
   const touchStartX = useRef(null);
 
@@ -36,6 +94,52 @@ function HeroSlideshow({
     }, intervalMs);
     return () => window.clearInterval(timer);
   }, [count, intervalMs]);
+
+  useEffect(() => {
+    const first = normalizedSlides[0];
+    const preferred = preferredSrc(first);
+    if (!preferred) return undefined;
+
+    let link = document.head.querySelector('link[data-hero-preload="true"]');
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'image';
+      link.setAttribute('data-hero-preload', 'true');
+      document.head.appendChild(link);
+    }
+    link.href = preferred;
+    if (first.avif) link.type = 'image/avif';
+    else if (first.webp) link.type = 'image/webp';
+    else link.removeAttribute('type');
+
+    return undefined;
+  }, [normalizedSlides]);
+
+  useEffect(() => {
+    const neighbors = [
+      index,
+      (index + 1) % count,
+      (index - 1 + count) % count,
+    ];
+    setReadyIndexes((current) => {
+      const next = new Set(current);
+      let changed = false;
+      neighbors.forEach((slideIndex) => {
+        if (!next.has(slideIndex)) {
+          next.add(slideIndex);
+          changed = true;
+        }
+      });
+      return changed ? next : current;
+    });
+
+    neighbors.forEach((slideIndex) => {
+      const slide = normalizedSlides[slideIndex];
+      if (!slide) return;
+      preloadImage(preferredSrc(slide));
+    });
+  }, [count, index, normalizedSlides]);
 
   const go = (direction) => {
     setIndex((current) => (current + direction + count) % count);
@@ -62,22 +166,37 @@ function HeroSlideshow({
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
-      {slides.map((src, slideIndex) => {
+      {normalizedSlides.map((slide, slideIndex) => {
         const active = slideIndex === index;
+        if (!readyIndexes.has(slideIndex) && !active) return null;
+
         return (
-          <motion.img
-            key={`${src}-${slideIndex}`}
-            src={src}
-            alt=""
-            className={`pointer-events-none absolute inset-0 h-full w-full ${fitClass} object-center`}
+          <motion.div
+            key={slideKey(slide, slideIndex)}
+            className="pointer-events-none absolute inset-0 h-full w-full"
             initial={false}
             animate={{
               opacity: active ? 1 : 0,
               x: active ? 0 : 28,
             }}
             transition={FADE_TRANSITION}
-            draggable="false"
-          />
+          >
+            <picture className="block h-full w-full">
+              {slide.avif ? <source srcSet={slide.avif} type="image/avif" /> : null}
+              {slide.webp ? <source srcSet={slide.webp} type="image/webp" /> : null}
+              <img
+                src={slide.png || slide.webp || slide.avif}
+                alt=""
+                width={HERO_SLIDE_WIDTH}
+                height={HERO_SLIDE_HEIGHT}
+                className={`h-full w-full ${fitClass} object-center`}
+                loading={slideIndex === 0 ? 'eager' : 'lazy'}
+                fetchPriority={slideIndex === 0 ? 'high' : 'low'}
+                decoding={slideIndex === 0 ? 'sync' : 'async'}
+                draggable="false"
+              />
+            </picture>
+          </motion.div>
         );
       })}
 
@@ -100,7 +219,7 @@ function HeroSlideshow({
             <ChevronRightIcon className="h-5 w-5" />
           </button>
           <div className="absolute bottom-2 left-1/2 z-20 hidden -translate-x-1/2 gap-2 md:flex">
-            {slides.map((_, dotIndex) => (
+            {normalizedSlides.map((_, dotIndex) => (
               <button
                 key={dotIndex}
                 type="button"
